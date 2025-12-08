@@ -5,16 +5,17 @@ import {
 } from "../../../types/aso/index.js";
 import { DEFAULT_LOCALE } from "../../../constants/unified-locales.js";
 import { saveAsoToAsoDir } from "../../../utils/aso-converter.js";
+import { getPushDataDir } from "../../../utils/config.util.js";
 
 /**
- * Save raw ASO data to ASO directory (default: .aso/pushData)
+ * Save raw ASO data to ASO directory
  */
 export function saveRawAsoData(
   slug: string,
   asoData: Partial<AsoData>,
   options?: { rootDir?: string }
 ): void {
-  const rootDir = options?.rootDir ?? ".aso/pushData";
+  const rootDir = options?.rootDir ?? getPushDataDir();
   saveAsoToAsoDir(slug, asoData, { rootDir });
 
   const localeCounts: { googlePlay?: number; appStore?: number } = {};

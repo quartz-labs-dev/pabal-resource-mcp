@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import type { ProductConfig, ProductLocale } from "../../../types/products/index.js";
 import { DEFAULT_LOCALE } from "../../../constants/unified-locales.js";
+import { getProductsDir } from "../../../utils/config.util.js";
 
 /**
  * Load product config and locales from public/products/[slug]/
@@ -10,7 +11,8 @@ export function loadProductLocales(slug: string): {
   config: ProductConfig | null;
   locales: Record<string, ProductLocale>;
 } {
-  const productDir = path.join(process.cwd(), "public", "products", slug);
+  const productsDir = getProductsDir();
+  const productDir = path.join(productsDir, slug);
   const configPath = path.join(productDir, "config.json");
   const localesDir = path.join(productDir, "locales");
 

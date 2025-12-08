@@ -25,6 +25,7 @@ import {
   unifiedToGooglePlay,
   unifiedToAppStore,
 } from "../utils/locale-converter.js";
+import { getPushDataDir } from "../utils/config.util.js";
 
 const FIELD_LIMITS_DOC_PATH = "docs/aso/ASO_FIELD_LIMITS.md";
 
@@ -64,16 +65,15 @@ const jsonSchema = toJsonSchema(publicToAsoInputSchema, {
 const inputSchema = jsonSchema.definitions?.PublicToAsoInput || jsonSchema;
 
 /**
- * Download/copy screenshots to .aso/pushData directory
+ * Download/copy screenshots to pushData directory
  */
 async function downloadScreenshotsToAsoDir(
   slug: string,
   asoData: AsoData,
   options?: { rootDir?: string }
 ): Promise<void> {
-  const rootDir = options?.rootDir ?? ".aso/pushData";
+  const rootDir = options?.rootDir ?? getPushDataDir();
   const productStoreRoot = path.join(
-    process.cwd(),
     rootDir,
     "products",
     slug,
@@ -237,15 +237,15 @@ async function downloadScreenshotsToAsoDir(
 
 export const publicToAsoTool = {
   name: "public-to-aso",
-  description: `Prepares ASO data from public/products/[slug]/ to .aso/pushData format.
+  description: `Prepares ASO data from public/products/[slug]/ to pushData format.
 
 **IMPORTANT:** The 'slug' parameter is REQUIRED. If the user does not provide a slug, you MUST ask them to provide it. This tool processes only ONE product at a time.
 
 This tool:
 1. Loads ASO data from public/products/[slug]/config.json + locales/
 2. Converts to store-compatible format (removes screenshots from metadata, sets contactWebsite/marketingUrl)
-3. Saves metadata to .aso/pushData/products/[slug]/store/
-4. Copies/downloads screenshots to .aso/pushData/products/[slug]/store/screenshots/
+3. Saves metadata to pushData/products/[slug]/store/ (path from ~/.config/pabal-mcp/config.json dataDir)
+4. Copies/downloads screenshots to pushData/products/[slug]/store/screenshots/
 
 Before running, review ${FIELD_LIMITS_DOC_PATH} for per-store limits. This prepares data for pushing to stores without actually uploading.`,
   inputSchema,
@@ -269,12 +269,14 @@ export async function handlePublicToAso(
   // Prepare data for push (remove screenshots, set contactWebsite, etc.)
   const storeData = prepareAsoDataForPush(slug, configData);
 
+  const pushDataRoot = getPushDataDir();
+
   if (dryRun) {
     return {
       content: [
         {
           type: "text",
-          text: `Preview mode - Data that would be saved to .aso/pushData:\n\n${JSON.stringify(
+          text: `Preview mode - Data that would be saved to ${pushDataRoot}:\n\n${JSON.stringify(
             storeData,
             null,
             2
@@ -284,8 +286,7 @@ export async function handlePublicToAso(
     };
   }
 
-  // Save metadata to .aso/pushData
-  const pushDataRoot = ".aso/pushData";
+  // Save metadata to pushData
   saveRawAsoData(slug, storeData, { rootDir: pushDataRoot });
 
   // Download/copy screenshots
@@ -313,7 +314,7 @@ export async function handlePublicToAso(
     localeCounts.appStore = Object.keys(locales).length;
   }
 
-  let responseText = `✅ ${slug} .aso/pushData files prepared from config.json + locales/ (images + metadata synced)\n\n`;
+  let responseText = `✅ ${slug} pushData files prepared from config.json + locales/ (images + metadata synced)\n\n`;
   if (localeCounts.googlePlay) {
     responseText += `Google Play: ${localeCounts.googlePlay} locale(s)\n`;
   }

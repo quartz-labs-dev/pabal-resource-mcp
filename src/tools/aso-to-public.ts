@@ -13,6 +13,7 @@ import {
 } from "../constants/unified-locales.js";
 import { loadPullData } from "./utils/aso-to-public/load-pull-data.util.js";
 import { generateConversionPrompt } from "./utils/aso-to-public/generate-conversion-prompt.util.js";
+import { getPullDataDir } from "../utils/config.util.js";
 
 const toJsonSchema: (
   schema: z.ZodTypeAny,
@@ -46,14 +47,14 @@ const inputSchema = jsonSchema.definitions?.AsoToPublicInput || jsonSchema;
 
 export const asoToPublicTool = {
   name: "aso-to-public",
-  description: `Converts ASO data from .aso/pullData to public/products/[slug]/ structure.
+  description: `Converts ASO data from pullData to public/products/[slug]/ structure.
 
 **IMPORTANT:** The 'slug' parameter is REQUIRED. If the user does not provide a slug, you MUST ask them to provide it. This tool processes only ONE product at a time.
 
 This tool:
-1. Loads ASO data from .aso/pullData/products/[slug]/store/
+1. Loads ASO data from pullData/products/[slug]/store/ (path from ~/.config/pabal-mcp/config.json dataDir)
 2. Generates per-locale conversion prompts to map fullDescription into structured locale JSON (template intro/outro + landing features/screenshots captions)
-3. Next steps (manual): paste converted JSON into public/products/[slug]/locales/[locale].json and copy screenshots from .aso/pullData if needed
+3. Next steps (manual): paste converted JSON into public/products/[slug]/locales/[locale].json and copy screenshots from pullData if needed
 
 The conversion from unstructured to structured format is performed by Claude based on the conversion prompt.`,
   inputSchema,
@@ -90,7 +91,7 @@ export async function handleAsoToPublic(
   const asoData = loadPullData(slug);
 
   if (!asoData.googlePlay && !asoData.appStore) {
-    throw new Error(`No ASO data found in .aso/pullData for ${slug}`);
+    throw new Error(`No ASO data found in pullData for ${slug}`);
   }
 
   // Map to store merged data by unified locale
@@ -171,7 +172,8 @@ export async function handleAsoToPublic(
 
       if (googlePlayLocale) {
         if (!screenshotPaths) screenshotPaths = {};
-        screenshotPaths.googlePlay = `.aso/pullData/products/${slug}/store/google-play/screenshots/${googlePlayLocale}/`;
+        const pullDataDir = getPullDataDir();
+        screenshotPaths.googlePlay = `${pullDataDir}/products/${slug}/store/google-play/screenshots/${googlePlayLocale}/`;
       }
     }
 
@@ -184,7 +186,8 @@ export async function handleAsoToPublic(
 
       if (appStoreLocale) {
         if (!screenshotPaths) screenshotPaths = {};
-        screenshotPaths.appStore = `.aso/pullData/products/${slug}/store/app-store/screenshots/${appStoreLocale}/`;
+        const pullDataDir = getPullDataDir();
+        screenshotPaths.appStore = `${pullDataDir}/products/${slug}/store/app-store/screenshots/${appStoreLocale}/`;
       }
     }
 
@@ -211,7 +214,8 @@ export async function handleAsoToPublic(
   }
 
   // Build response message
-  let responseText = `Converting ASO data from .aso/pullData to public/products/${slug}/ structure.\n\n`;
+  const pullDataDir = getPullDataDir();
+  let responseText = `Converting ASO data from pullData to public/products/${slug}/ structure.\n\n`;
   responseText += `Found ${conversionTasks.length} unified locale(s) to convert.\n`;
   responseText += `Data sources: Google Play (${asoData.googlePlay ? "✓" : "✗"}), App Store (${asoData.appStore ? "✓" : "✗"})\n\n`;
   responseText +=
@@ -222,7 +226,7 @@ export async function handleAsoToPublic(
   responseText += `\n\nNext steps (manual):\n`;
   responseText += `1. Save converted JSON to public/products/${slug}/locales/[locale].json\n`;
   responseText += `   Example: public/products/${slug}/locales/ar.json (not ar-SA.json)\n`;
-  responseText += `2. Copy screenshots from .aso/pullData/products/${slug}/store/ to public/products/${slug}/screenshots/\n`;
+  responseText += `2. Copy screenshots from ${pullDataDir}/products/${slug}/store/ to public/products/${slug}/screenshots/\n`;
 
   return {
     content: [

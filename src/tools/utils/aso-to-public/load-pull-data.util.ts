@@ -1,18 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { AsoData } from "../../../types/aso/index.js";
+import { getPullDataDir } from "../../../utils/config.util.js";
 
 /**
- * Load ASO data from .aso/pullData
+ * Load ASO data from pullData directory
  */
 export function loadPullData(slug: string): AsoData {
   const asoData: AsoData = {};
+  const pullDataDir = getPullDataDir();
 
   // Load Google Play data
   const googlePlayPath = path.join(
-    process.cwd(),
-    ".aso",
-    "pullData",
+    pullDataDir,
     "products",
     slug,
     "store",
@@ -34,9 +34,7 @@ export function loadPullData(slug: string): AsoData {
 
   // Load App Store data
   const appStorePath = path.join(
-    process.cwd(),
-    ".aso",
-    "pullData",
+    pullDataDir,
     "products",
     slug,
     "store",
@@ -58,4 +56,3 @@ export function loadPullData(slug: string): AsoData {
 
   return asoData;
 }
-

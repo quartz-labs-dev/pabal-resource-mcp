@@ -18,6 +18,7 @@ import {
   isAppStoreLocale,
 } from "../types/aso/index.js";
 import { DEFAULT_LOCALE } from "../constants/unified-locales.js";
+import { getPushDataDir, getProductsDir } from "./config.util.js";
 import type {
   AsoLocaleContent,
   ProductConfig,
@@ -94,10 +95,9 @@ function generateFullDescription(
  * 새 구조: config.json (메타데이터) + locales/{locale}.json (콘텐츠)
  */
 export function loadAsoFromConfig(slug: string): AsoData {
+  const productsDir = getProductsDir();
   const configPath = path.join(
-    process.cwd(),
-    "public",
-    "products",
+    productsDir,
     slug,
     "config.json"
   );
@@ -112,9 +112,7 @@ export function loadAsoFromConfig(slug: string): AsoData {
 
     // Load locales from separate files
     const localesDir = path.join(
-      process.cwd(),
-      "public",
-      "products",
+      productsDir,
       slug,
       "locales"
     );
@@ -257,10 +255,9 @@ export function loadAsoFromConfig(slug: string): AsoData {
  * config.json에 ASO 데이터를 저장합니다
  */
 export function saveAsoToConfig(slug: string, config: ProductConfig): void {
+  const productsDir = getProductsDir();
   const configPath = path.join(
-    process.cwd(),
-    "public",
-    "products",
+    productsDir,
     slug,
     "config.json"
   );
@@ -269,19 +266,18 @@ export function saveAsoToConfig(slug: string, config: ProductConfig): void {
 }
 
 /**
- * ASO 데이터를 지정한 ASO 디렉토리에 저장합니다 (기본: .aso/pushData)
+ * ASO 데이터를 지정한 ASO 디렉토리에 저장합니다
  */
 export function saveAsoToAsoDir(
   slug: string,
   asoData: AsoData,
   options?: { rootDir?: string }
 ): void {
-  const rootDir = options?.rootDir ?? ".aso/pushData";
+  const rootDir = options?.rootDir ?? getPushDataDir();
 
   // Google Play 데이터 저장
   if (asoData.googlePlay) {
     const asoPath = path.join(
-      process.cwd(),
       rootDir,
       "products",
       slug,
@@ -317,7 +313,6 @@ export function saveAsoToAsoDir(
   // App Store 데이터 저장
   if (asoData.appStore) {
     const asoPath = path.join(
-      process.cwd(),
       rootDir,
       "products",
       slug,

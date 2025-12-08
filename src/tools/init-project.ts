@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import { getPullDataDir, getProductsDir } from "../utils/config.util.js";
 
 const listSlugDirs = (dir: string): string[] => {
   if (!fs.existsSync(dir)) return [];
@@ -24,7 +25,7 @@ export const initProjectInputSchema = z.object({
     .trim()
     .optional()
     .describe(
-      "Optional product slug to focus on. Defaults to all slugs in .aso/pullData/products/"
+      "Optional product slug to focus on. Defaults to all slugs in pullData/products/"
     ),
 });
 
@@ -45,7 +46,7 @@ export const initProjectTool = {
 This tool is read-only and returns a checklist. It does not call pabal-mcp directly or write files.
 
 Steps:
-1) Ensure pabal-mcp 'init' ran and .aso/pullData/products/[slug]/ exists
+1) Ensure pabal-mcp 'init' ran and pullData/products/[slug]/ exists (path from ~/.config/pabal-mcp/config.json dataDir)
 2) Convert pulled ASO data -> public/products/[slug]/ using pabal-web-mcp tools (aso-to-public, public-to-aso dry run)
 3) Validate outputs and next actions`,
   inputSchema,
@@ -54,8 +55,8 @@ Steps:
 export async function handleInitProject(
   input: InitProjectInput
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
-  const pullDataDir = path.join(process.cwd(), ".aso", "pullData", "products");
-  const publicDir = path.join(process.cwd(), "public", "products");
+  const pullDataDir = path.join(getPullDataDir(), "products");
+  const publicDir = getProductsDir();
 
   const pullDataSlugs = listSlugDirs(pullDataDir);
   const publicSlugs = listSlugDirs(publicDir);
@@ -89,7 +90,7 @@ export async function handleInitProject(
 
   if (targetSlugs.length === 0) {
     lines.push(
-      "No products detected. Run pabal-mcp 'init' for your slug(s) to populate .aso/pullData/products/, then rerun this tool."
+      "No products detected. Run pabal-mcp 'init' for your slug(s) to populate pullData/products/, then rerun this tool."
     );
     return {
       content: [
@@ -134,7 +135,7 @@ export async function handleInitProject(
 
   lines.push("Step 3: Verify and prepare for push (optional)");
   lines.push(
-    "Use pabal-web-mcp 'public-to-aso' with dryRun=true to validate structure and build .aso/pushData before uploading via store tooling."
+    "Use pabal-web-mcp 'public-to-aso' with dryRun=true to validate structure and build pushData before uploading via store tooling."
   );
   lines.push("");
 

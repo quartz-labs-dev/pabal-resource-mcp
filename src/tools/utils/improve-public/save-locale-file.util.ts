@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { ProductLocale } from "../../../types/products/index.js";
+import { getProductsDir } from "../../../utils/config.util.js";
 
 /**
  * Save locale data to file
@@ -14,10 +15,9 @@ export function saveLocaleFile({
   locale: string;
   localeData: ProductLocale;
 }): void {
+  const productsDir = getProductsDir();
   const localesDir = path.join(
-    process.cwd(),
-    "public",
-    "products",
+    productsDir,
     slug,
     "locales"
   );
