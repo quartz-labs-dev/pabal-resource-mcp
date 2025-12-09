@@ -99,7 +99,14 @@ export function loadAsoFromConfig(slug: string): AsoData {
   const productsDir = getProductsDir();
   const configPath = path.join(productsDir, slug, "config.json");
 
+  // Debug: Log paths for troubleshooting
+  console.debug(`[loadAsoFromConfig] Looking for ${slug}:`);
+  console.debug(`  - productsDir: ${productsDir}`);
+  console.debug(`  - configPath: ${configPath}`);
+  console.debug(`  - configPath exists: ${fs.existsSync(configPath)}`);
+
   if (!fs.existsSync(configPath)) {
+    console.warn(`[loadAsoFromConfig] Config file not found at ${configPath}`);
     return {};
   }
 
@@ -110,7 +117,13 @@ export function loadAsoFromConfig(slug: string): AsoData {
     // Load locales from separate files
     const localesDir = path.join(productsDir, slug, "locales");
 
+    console.debug(`  - localesDir: ${localesDir}`);
+    console.debug(`  - localesDir exists: ${fs.existsSync(localesDir)}`);
+
     if (!fs.existsSync(localesDir)) {
+      console.warn(
+        `[loadAsoFromConfig] Locales directory not found at ${localesDir}`
+      );
       return {};
     }
 
@@ -128,8 +141,15 @@ export function loadAsoFromConfig(slug: string): AsoData {
     }
 
     // Debug: Log loaded locales
+    console.debug(
+      `  - Found ${Object.keys(locales).length} locale file(s): ${Object.keys(
+        locales
+      ).join(", ")}`
+    );
     if (Object.keys(locales).length === 0) {
-      console.warn(`No locale files found in ${localesDir}`);
+      console.warn(
+        `[loadAsoFromConfig] No locale files found in ${localesDir}`
+      );
     }
 
     const defaultLocale = config.content?.defaultLocale || DEFAULT_LOCALE;
@@ -286,9 +306,24 @@ export function loadAsoFromConfig(slug: string): AsoData {
       }
     }
 
+    // Debug: Log final result
+    const hasGooglePlay = !!asoData.googlePlay;
+    const hasAppStore = !!asoData.appStore;
+    console.debug(`[loadAsoFromConfig] Result for ${slug}:`);
+    console.debug(
+      `  - Google Play data: ${hasGooglePlay ? "found" : "not found"}`
+    );
+    console.debug(`  - App Store data: ${hasAppStore ? "found" : "not found"}`);
+    if (!hasGooglePlay && !hasAppStore) {
+      console.warn(`[loadAsoFromConfig] No ASO data generated for ${slug}`);
+    }
+
     return asoData;
   } catch (error) {
-    console.error(`Failed to load ASO data from config for ${slug}:`, error);
+    console.error(
+      `[loadAsoFromConfig] Failed to load ASO data from config for ${slug}:`,
+      error
+    );
     return {};
   }
 }
