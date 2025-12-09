@@ -1,6 +1,10 @@
 # pabal-web-mcp
 
-MCP (Model Context Protocol) server for ASO (App Store Optimization) data management with shared types and utilities.
+MCP (Model Context Protocol) server for bidirectional conversion between ASO (App Store Optimization) and web SEO data.
+
+This library enables seamless reuse of ASO data for web SEO purposes, allowing you to convert ASO metadata directly into web SEO content and vice versa.
+
+[![한국어 docs](https://img.shields.io/badge/docs-Korean-green)](./i18n/README.ko.md)
 
 ## 🛠️ MCP Client Installation
 
@@ -223,6 +227,8 @@ console.log(asoData.googlePlay?.title);
 
 ## Supported Locales
 
+Supports all languages supported by each store.
+
 | Unified | App Store | Google Play |
 | ------- | --------- | ----------- |
 | en-US   | en-US     | en-US       |
@@ -239,3 +245,17 @@ console.log(asoData.googlePlay?.title);
 ## License
 
 MIT
+
+---
+
+<br>
+
+## 🌐 Pabal Web
+
+Want to manage ASO and SEO together? Check out **Pabal Web**.
+
+[![Pabal Web](public/pabal-web.png)](https://pabal.quartz.best/)
+
+**Pabal Web** is a Next.js-based web interface that provides a complete solution for unified management of ASO, SEO, Google Search Console indexing, and more.
+
+👉 [Visit Pabal Web](https://pabal.quartz.best/)
