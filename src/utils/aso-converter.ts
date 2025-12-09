@@ -55,7 +55,7 @@ function generateFullDescription(
       keyHeading,
       "",
       ...landingFeatures.map((feature) =>
-        [feature.title, feature.body || ""].filter(Boolean).join("\n")
+        [`▶︎ ${feature.title}`, feature.body || ""].filter(Boolean).join("\n")
       )
     );
   }
@@ -65,7 +65,7 @@ function generateFullDescription(
 
     parts.push(
       ...landingScreenshots.map((screenshot) =>
-        [screenshot.title, screenshot.description || ""]
+        [`▶︎ ${screenshot.title}`, screenshot.description || ""]
           .filter(Boolean)
           .join("\n")
       )

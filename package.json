@@ -1,6 +1,6 @@
 {
   "name": "pabal-web-mcp",
-  "version": "0.1.6",
+  "version": "1.0.0",
   "type": "module",
   "description": "MCP server for ASO data management with shared types and utilities",
   "author": "skyu",
