@@ -2,7 +2,12 @@
  * Types for the create-blog-html MCP tool
  */
 
-export interface BlogMeta {
+/**
+ * BlogMetaOutput for MCP tool output
+ * All fields are required (resolved values)
+ * Note: This is separate from blog.types.ts BlogMeta which uses UnifiedLocale
+ */
+export interface BlogMetaOutput {
   title: string;
   description: string;
   appSlug: string;
@@ -79,5 +84,5 @@ export interface CreateBlogHtmlResult {
   baseDir: string;
   files: GeneratedBlogFile[];
   coverImage: string;
-  metaByLocale: Record<string, BlogMeta>;
+  metaByLocale: Record<string, BlogMetaOutput>;
 }

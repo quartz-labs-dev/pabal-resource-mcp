@@ -12,7 +12,7 @@ import {
 } from "../utils/blog.util.js";
 import { getPublicDir } from "../utils/config.util.js";
 import type {
-  BlogMeta,
+  BlogMetaOutput,
   CreateBlogHtmlResult,
 } from "../types/tools/create-blog.types.js";
 
@@ -57,7 +57,9 @@ export const createBlogHtmlInputSchema = z
       .trim()
       .optional()
       .default("en-US")
-      .describe("Primary locale (default en-US). Ignored when locales[] is set."),
+      .describe(
+        "Primary locale (default en-US). Ignored when locales[] is set."
+      ),
     locales: z
       .array(z.string().trim().min(1))
       .optional()
@@ -74,7 +76,9 @@ export const createBlogHtmlInputSchema = z
     tags: z
       .array(z.string().trim().min(1))
       .optional()
-      .describe("Optional tags for BLOG_META. Defaults to tags derived from topic."),
+      .describe(
+        "Optional tags for BLOG_META. Defaults to tags derived from topic."
+      ),
     coverImage: z
       .string()
       .trim()
@@ -93,7 +97,9 @@ export const createBlogHtmlInputSchema = z
       .string()
       .trim()
       .optional()
-      .describe("Override the relative image path (default ./images/hero.png)."),
+      .describe(
+        "Override the relative image path (default ./images/hero.png)."
+      ),
     publishedAt: z
       .string()
       .trim()
@@ -114,11 +120,12 @@ export const createBlogHtmlInputSchema = z
   })
   .describe("Generate static HTML blog posts with BLOG_META headers.");
 
-export type CreateBlogHtmlInputParsed = z.infer<typeof createBlogHtmlInputSchema>;
+export type CreateBlogHtmlInputParsed = z.infer<
+  typeof createBlogHtmlInputSchema
+>;
 
 const jsonSchema = toJsonSchema(createBlogHtmlInputSchema, {
   name: "CreateBlogHtmlInput",
-  target: "openApi3",
   $refStrategy: "none",
 });
 
@@ -199,7 +206,9 @@ export async function handleCreateBlogHtml(
     })
   );
 
-  const existing = plannedFiles.filter(({ filePath }) => fs.existsSync(filePath));
+  const existing = plannedFiles.filter(({ filePath }) =>
+    fs.existsSync(filePath)
+  );
   if (existing.length > 0 && !overwrite) {
     const existingList = existing.map((f) => f.filePath).join("\n- ");
     throw new Error(
@@ -217,7 +226,7 @@ export async function handleCreateBlogHtml(
       publicDir,
     });
 
-    const meta: BlogMeta = buildBlogMeta({
+    const meta: BlogMetaOutput = buildBlogMeta({
       title: resolvedTitle,
       description,
       appSlug,

@@ -59,7 +59,6 @@ export type PublicToAsoInput = z.infer<typeof publicToAsoInputSchema>;
  */
 const jsonSchema = toJsonSchema(publicToAsoInputSchema, {
   name: "PublicToAsoInput",
-  target: "openApi3",
   $refStrategy: "none",
 });
 

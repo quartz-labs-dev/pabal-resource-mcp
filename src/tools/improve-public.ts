@@ -71,7 +71,6 @@ export type ImprovePublicInput = z.infer<typeof improvePublicInputSchema>;
  */
 const jsonSchema = toJsonSchema(improvePublicInputSchema, {
   name: "ImprovePublicInput",
-  target: "openApi3",
   $refStrategy: "none",
 });
 

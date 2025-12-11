@@ -39,7 +39,6 @@ export type AsoToPublicInput = z.infer<typeof asoToPublicInputSchema>;
  */
 const jsonSchema = toJsonSchema(asoToPublicInputSchema, {
   name: "AsoToPublicInput",
-  target: "openApi3",
   $refStrategy: "none",
 });
 
@@ -194,7 +193,9 @@ export async function handleAsoToPublic(
     const prompt = generateConversionPrompt(
       mergedData.googlePlay?.title || mergedData.appStore?.name || "",
       mergedData.googlePlay?.shortDescription || mergedData.appStore?.subtitle,
-      mergedData.googlePlay?.fullDescription || mergedData.appStore?.description || "",
+      mergedData.googlePlay?.fullDescription ||
+        mergedData.appStore?.description ||
+        "",
       unifiedLocale,
       mergedData.appStore?.keywords,
       mergedData.appStore?.promotionalText,
@@ -210,14 +211,18 @@ export async function handleAsoToPublic(
     });
 
     const sourcesText = sources.join(" + ");
-    conversionPrompts.push(`\n--- ${unifiedLocale} (${sourcesText}) ---\n${prompt}`);
+    conversionPrompts.push(
+      `\n--- ${unifiedLocale} (${sourcesText}) ---\n${prompt}`
+    );
   }
 
   // Build response message
   const pullDataDir = getPullDataDir();
   let responseText = `Converting ASO data from pullData to public/products/${slug}/ structure.\n\n`;
   responseText += `Found ${conversionTasks.length} unified locale(s) to convert.\n`;
-  responseText += `Data sources: Google Play (${asoData.googlePlay ? "✓" : "✗"}), App Store (${asoData.appStore ? "✓" : "✗"})\n\n`;
+  responseText += `Data sources: Google Play (${
+    asoData.googlePlay ? "✓" : "✗"
+  }), App Store (${asoData.appStore ? "✓" : "✗"})\n\n`;
   responseText +=
     "Please convert each locale's ASO data using the prompts below.\n";
   responseText +=

@@ -33,7 +33,6 @@ export type InitProjectInput = z.infer<typeof initProjectInputSchema>;
 
 const jsonSchema = zodToJsonSchema(initProjectInputSchema as any, {
   name: "InitProjectInput",
-  target: "openApi3",
   $refStrategy: "none",
 });
 

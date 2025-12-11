@@ -1,6 +1,6 @@
 import path from "node:path";
 import type {
-  BlogMeta,
+  BlogMetaOutput,
   CreateBlogHtmlInput,
 } from "../types/tools/create-blog.types.js";
 
@@ -130,7 +130,7 @@ export function buildBlogMeta(options: {
   tags?: string[];
   publishedAt?: string;
   modifiedAt?: string;
-}): BlogMeta {
+}): BlogMetaOutput {
   const publishedAt = normalizeDate(options.publishedAt);
   const modifiedAt = normalizeDate(options.modifiedAt || publishedAt);
 
@@ -159,20 +159,25 @@ export function buildBlogMeta(options: {
   };
 }
 
-export function renderBlogMetaBlock(meta: BlogMeta): string {
+export function renderBlogMetaBlock(meta: BlogMetaOutput): string {
   const serialized = JSON.stringify(meta, null, 2);
   return `<!--BLOG_META\n${serialized}\n-->`;
 }
 
 function renderEnglishBody(args: {
-  meta: BlogMeta;
+  meta: BlogMetaOutput;
   topic: string;
   appSlug: string;
   includeRelativeImageExample?: boolean;
   relativeImagePath?: { raw: string; absolute: string };
 }) {
-  const { meta, topic, appSlug, includeRelativeImageExample, relativeImagePath } =
-    args;
+  const {
+    meta,
+    topic,
+    appSlug,
+    includeRelativeImageExample,
+    relativeImagePath,
+  } = args;
 
   const lines: string[] = [];
 
@@ -230,14 +235,19 @@ function renderEnglishBody(args: {
 }
 
 function renderKoreanBody(args: {
-  meta: BlogMeta;
+  meta: BlogMetaOutput;
   topic: string;
   appSlug: string;
   includeRelativeImageExample?: boolean;
   relativeImagePath?: { raw: string; absolute: string };
 }) {
-  const { meta, topic, appSlug, includeRelativeImageExample, relativeImagePath } =
-    args;
+  const {
+    meta,
+    topic,
+    appSlug,
+    includeRelativeImageExample,
+    relativeImagePath,
+  } = args;
 
   const lines: string[] = [];
 
@@ -295,7 +305,7 @@ function renderKoreanBody(args: {
 }
 
 export function renderBlogBody(options: {
-  meta: BlogMeta;
+  meta: BlogMetaOutput;
   topic: string;
   appSlug: string;
   includeRelativeImageExample?: boolean;
@@ -308,7 +318,7 @@ export function renderBlogBody(options: {
 }
 
 export function buildBlogHtmlDocument(options: {
-  meta: BlogMeta;
+  meta: BlogMetaOutput;
   topic: string;
   appSlug: string;
   includeRelativeImageExample?: boolean;
@@ -331,9 +341,7 @@ export function resolveTargetLocales(
   defaultLocale = "en-US"
 ): string[] {
   if (input.locales?.length) {
-    const locales = input.locales
-      .map((loc) => loc.trim())
-      .filter(Boolean);
+    const locales = input.locales.map((loc) => loc.trim()).filter(Boolean);
     return Array.from(new Set(locales));
   }
   const fallback = input.locale?.trim() || defaultLocale;
