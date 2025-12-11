@@ -103,9 +103,10 @@ async function downloadScreenshotsToAsoDir(
         googlePlayLocale
       );
 
-      if (localeData.screenshots?.phone?.length > 0) {
-        for (let i = 0; i < localeData.screenshots.phone.length; i++) {
-          const url = localeData.screenshots.phone[i];
+      const phoneScreenshots = localeData.screenshots?.phone;
+      if (phoneScreenshots && phoneScreenshots.length > 0) {
+        for (let i = 0; i < phoneScreenshots.length; i++) {
+          const url = phoneScreenshots[i];
           const filename = `phone-${i + 1}.png`;
           const outputPath = path.join(asoDir, filename);
           if (isLocalAssetPath(url)) {

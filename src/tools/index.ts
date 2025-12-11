@@ -27,6 +27,11 @@ import {
   initProjectInputSchema,
   handleInitProject,
 } from "./init-project.js";
+import {
+  createBlogHtmlTool,
+  createBlogHtmlInputSchema,
+  handleCreateBlogHtml,
+} from "./create-blog-html.js";
 import type { z } from "zod";
 
 export interface ToolInfo {
@@ -74,6 +79,14 @@ export const tools: ToolInfo[] = [
     handler: handleInitProject,
     category: "Setup",
   },
+  {
+    name: createBlogHtmlTool.name,
+    description: createBlogHtmlTool.description,
+    inputSchema: createBlogHtmlTool.inputSchema,
+    zodSchema: createBlogHtmlInputSchema,
+    handler: handleCreateBlogHtml,
+    category: "Content",
+  },
 ];
 
 /**
@@ -85,6 +98,7 @@ export function getToolDefinitions() {
     publicToAsoTool,
     improvePublicTool,
     initProjectTool,
+    createBlogHtmlTool,
   ];
 }
 

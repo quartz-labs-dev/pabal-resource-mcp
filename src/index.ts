@@ -7,6 +7,7 @@
 // Types
 export * from "./types/aso/index.js";
 export * from "./types/products/index.js";
+export * from "./types/tools/index.js";
 
 // Constants
 export {

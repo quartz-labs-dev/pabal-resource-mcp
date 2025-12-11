@@ -16,7 +16,7 @@ import {
  * pabal-web-mcp Server
  *
  * MCP server for ASO data management
- * Tools: aso-to-public, public-to-aso, improve-public, init-project
+ * Tools: aso-to-public, public-to-aso, improve-public, init-project, create-blog-html
  */
 
 const server = new Server(
