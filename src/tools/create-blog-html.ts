@@ -5,6 +5,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import {
   buildBlogHtmlDocument,
   buildBlogMeta,
+  findExistingBlogPosts,
   getBlogOutputPaths,
   resolveTargetLocales,
   slugifyTitle,
@@ -74,9 +75,9 @@ export const createBlogHtmlInputSchema = z
     description: z
       .string()
       .trim()
-      .optional()
+      .min(1, "description is required")
       .describe(
-        "Meta description override. If omitted, the tool generates one from appSlug/topic per locale."
+        "Meta description for the blog post. You (the LLM) must generate this based on the topic and locale. Should be a concise summary of the blog content in the language corresponding to the locale."
       ),
     tags: z
       .array(z.string().trim().min(1))
@@ -126,9 +127,17 @@ export const createBlogHtmlTool = {
   name: "create-blog-html",
   description: `Generate HTML blog posts under public/blogs/<appSlug>/<slug>/<locale>.html with a BLOG_META block.
 
+CRITICAL: WRITING STYLE CONSISTENCY
+Before generating content, you MUST:
+1. Read existing blog posts from public/blogs/<appSlug>/*/<locale>.html (use findExistingBlogPosts utility or read files directly)
+2. Analyze the writing style, tone, and format from 2 existing posts in the same locale
+3. Match that exact writing style when generating the new blog post content and description
+4. Maintain consistency in: paragraph structure, heading usage, tone, formality level, and overall format
+
 IMPORTANT REQUIREMENTS:
 1. The 'locale' parameter is REQUIRED. If the user does not provide a locale, you MUST ask them to specify which language/locale they want to write the blog in (e.g., 'en-US', 'ko-KR', 'ja-JP', etc.).
-2. The 'content' parameter is REQUIRED. You (the LLM) must generate the HTML content based on the 'topic' and 'locale' provided by the user. The content should be written in the language corresponding to the locale.
+2. The 'content' parameter is REQUIRED. You (the LLM) must generate the HTML content based on the 'topic' and 'locale' provided by the user. The content should be written in the language corresponding to the locale AND match the writing style of existing blog posts for that locale.
+3. The 'description' parameter is REQUIRED. You (the LLM) must generate this based on the topic, locale, AND the writing style of existing blog posts.
 
 Slug rules:
 - slug = slugify(English title, kebab-case ASCII)
@@ -139,9 +148,12 @@ Slug rules:
 HTML Structure (follows public/en-US.html pattern):
 - BLOG_META block at the top with JSON metadata
 - HTML body content: paragraphs (<p>), headings (<h2>, <h3>), images (<img>), lists (<ul>, <li>), horizontal rules (<hr>), etc.
-- You must generate the HTML content based on the topic, making it relevant and engaging for the target locale's language.
+- You must generate the HTML content based on the topic, making it relevant and engaging for the target locale's language, while maintaining consistency with existing blog posts.
 
-Supports multiple locales when locales[] is provided. Each locale gets its own HTML file. For each locale, you must generate appropriate content in that locale's language.`,
+Supports multiple locales when locales[] is provided. Each locale gets its own HTML file. For each locale, you must:
+1. Read existing posts in that locale to understand the writing style
+2. Generate appropriate content in that locale's language
+3. Match the writing style and format of existing posts`,
   inputSchema,
 };
 
@@ -177,6 +189,24 @@ export async function handleCreateBlogHtml(
     throw new Error(
       "Locale is required. Please specify which language/locale you want to write the blog in (e.g., 'en-US', 'ko-KR', 'ja-JP')."
     );
+  }
+
+  // Find existing blog posts for writing style reference
+  const existingPostsByLocale: Record<
+    string,
+    Array<{ filePath: string; meta: BlogMetaOutput; body: string }>
+  > = {};
+
+  for (const locale of targetLocales) {
+    const existingPosts = findExistingBlogPosts({
+      appSlug,
+      locale,
+      publicDir,
+      limit: 2,
+    });
+    if (existingPosts.length > 0) {
+      existingPostsByLocale[locale] = existingPosts;
+    }
   }
 
   const output: CreateBlogHtmlResult = {
@@ -255,11 +285,27 @@ export async function handleCreateBlogHtml(
     ...output.files.map((file) => `- ${file.locale}: ${file.path}`),
   ];
 
+  // Include information about existing posts used for style reference
+  const styleReferenceInfo: string[] = [];
+  for (const [locale, posts] of Object.entries(existingPostsByLocale)) {
+    if (posts.length > 0) {
+      styleReferenceInfo.push(
+        `\nWriting style reference for ${locale}: Found ${posts.length} existing post(s) used for style consistency.`
+      );
+    }
+  }
+
+  if (styleReferenceInfo.length === 0) {
+    styleReferenceInfo.push(
+      "\nNote: No existing blog posts found for style reference. This is the first post for this app/locale combination."
+    );
+  }
+
   return {
     content: [
       {
         type: "text",
-        text: summaryLines.join("\n"),
+        text: summaryLines.join("\n") + styleReferenceInfo.join(""),
       },
     ],
   };

@@ -1,3 +1,4 @@
+import fs from "node:fs";
 import path from "node:path";
 import type {
   BlogMetaOutput,
@@ -44,9 +45,6 @@ export function normalizeDate(date?: string): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-const isKoreanLocale = (locale: string) =>
-  locale.trim().toLowerCase().startsWith("ko");
-
 const toPublicBlogBase = (appSlug: string, slug: string) =>
   `/${BLOG_ROOT}/${appSlug}/${slug}`;
 
@@ -75,21 +73,6 @@ export function resolveCoverImagePath(
   }
 
   return cleaned;
-}
-
-/**
- * Generate meta description based on locale/topic/app.
- */
-export function buildDescription(
-  locale: string,
-  topic: string,
-  appSlug: string
-): string {
-  if (isKoreanLocale(locale)) {
-    return `${topic}를 주제로 ${appSlug}가 ASO와 SEO를 어떻게 연결하고 블로그 트래픽을 제품 페이지로 이어주는지 정리했습니다.`;
-  }
-
-  return `How ${appSlug} teams turn "${topic}" into a bridge between ASO pages and SEO blogs without losing consistency.`;
 }
 
 /**
@@ -127,11 +110,15 @@ export function buildBlogMeta(options: {
     options.coverImage
   );
 
+  if (!options.description || !options.description.trim()) {
+    throw new Error(
+      "Description is required. The LLM must generate a meta description based on the topic and locale."
+    );
+  }
+
   return {
     title: options.title,
-    description:
-      options.description ||
-      buildDescription(options.locale, options.topic, options.appSlug),
+    description: options.description.trim(),
     appSlug: options.appSlug,
     slug: options.slug,
     locale: options.locale,
@@ -202,4 +189,99 @@ export function getBlogOutputPaths(options: {
   const publicBasePath = toPublicBlogBase(options.appSlug, options.slug);
 
   return { baseDir, filePath, publicBasePath };
+}
+
+/**
+ * Parse BLOG_META block from HTML content.
+ * Returns the meta object and the body content (without BLOG_META block).
+ */
+export function parseBlogHtml(htmlContent: string): {
+  meta: BlogMetaOutput | null;
+  body: string;
+} {
+  const metaBlockRegex = /<!--BLOG_META\s*\n([\s\S]*?)\n-->/;
+  const match = htmlContent.match(metaBlockRegex);
+
+  if (!match) {
+    return { meta: null, body: htmlContent.trim() };
+  }
+
+  try {
+    const metaJson = match[1].trim();
+    const meta = JSON.parse(metaJson) as BlogMetaOutput;
+    const body = htmlContent.replace(metaBlockRegex, "").trim();
+
+    return { meta, body };
+  } catch (error) {
+    // If parsing fails, return the whole content as body
+    return { meta: null, body: htmlContent.trim() };
+  }
+}
+
+/**
+ * Find existing blog posts for a given appSlug and locale.
+ * Returns up to 2 blog posts sorted by publishedAt (newest first).
+ */
+export function findExistingBlogPosts({
+  appSlug,
+  locale,
+  publicDir,
+  limit = 2,
+}: {
+  appSlug: string;
+  locale: string;
+  publicDir: string;
+  limit?: number;
+}): Array<{ filePath: string; meta: BlogMetaOutput; body: string }> {
+  const blogAppDir = path.join(publicDir, BLOG_ROOT, appSlug);
+
+  if (!fs.existsSync(blogAppDir)) {
+    return [];
+  }
+
+  const posts: Array<{
+    filePath: string;
+    meta: BlogMetaOutput;
+    body: string;
+    publishedAt: string;
+  }> = [];
+
+  // Scan all subdirectories in blogs/<appSlug>/
+  const subdirs = fs.readdirSync(blogAppDir, { withFileTypes: true });
+  for (const subdir of subdirs) {
+    if (!subdir.isDirectory()) continue;
+
+    const localeFile = path.join(blogAppDir, subdir.name, `${locale}.html`);
+    if (!fs.existsSync(localeFile)) continue;
+
+    try {
+      const htmlContent = fs.readFileSync(localeFile, "utf-8");
+      const { meta, body } = parseBlogHtml(htmlContent);
+
+      if (meta && meta.locale === locale) {
+        posts.push({
+          filePath: localeFile,
+          meta,
+          body,
+          publishedAt: meta.publishedAt,
+        });
+      }
+    } catch (error) {
+      // Skip files that can't be read or parsed
+      continue;
+    }
+  }
+
+  // Sort by publishedAt (newest first) and return up to limit
+  posts.sort((a, b) => {
+    const dateA = new Date(a.publishedAt).getTime();
+    const dateB = new Date(b.publishedAt).getTime();
+    return dateB - dateA; // newest first
+  });
+
+  return posts.slice(0, limit).map(({ filePath, meta, body }) => ({
+    filePath,
+    meta,
+    body,
+  }));
 }
