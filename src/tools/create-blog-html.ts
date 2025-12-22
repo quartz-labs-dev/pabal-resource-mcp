@@ -6,7 +6,6 @@ import {
   buildBlogHtmlDocument,
   buildBlogMeta,
   getBlogOutputPaths,
-  resolveRelativeImagePath,
   resolveTargetLocales,
   slugifyTitle,
 } from "../utils/blog.util.js";
@@ -55,16 +54,22 @@ export const createBlogHtmlInputSchema = z
     locale: z
       .string()
       .trim()
-      .optional()
-      .default("en-US")
+      .min(1, "locale is required")
       .describe(
-        "Primary locale (default en-US). Ignored when locales[] is set."
+        "Primary locale (e.g., 'en-US', 'ko-KR'). Required to determine the language for blog content generation."
       ),
     locales: z
       .array(z.string().trim().min(1))
       .optional()
       .describe(
-        "Optional list of locales to generate. Each locale gets its own HTML file."
+        "Optional list of locales to generate. Each locale gets its own HTML file. If provided, locale parameter is ignored."
+      ),
+    content: z
+      .string()
+      .trim()
+      .min(1, "content is required")
+      .describe(
+        "HTML content for the blog body. You (the LLM) must generate this HTML content based on the topic and locale. Structure should follow the pattern in public/en-US.html: paragraphs (<p>), headings (<h2>, <h3>), images (<img>), lists (<ul>, <li>), horizontal rules (<hr>), etc. The content should be written in the language corresponding to the locale."
       ),
     description: z
       .string()
@@ -85,20 +90,6 @@ export const createBlogHtmlInputSchema = z
       .optional()
       .describe(
         "Cover image path. Relative paths rewrite to /blogs/<app>/<slug>/..., default is /products/<appSlug>/og-image.png."
-      ),
-    includeRelativeImageExample: z
-      .boolean()
-      .optional()
-      .default(false)
-      .describe(
-        "Inject a relative image example (./images/hero.png) into the body to demonstrate path rewriting."
-      ),
-    relativeImagePath: z
-      .string()
-      .trim()
-      .optional()
-      .describe(
-        "Override the relative image path (default ./images/hero.png)."
       ),
     publishedAt: z
       .string()
@@ -135,19 +126,22 @@ export const createBlogHtmlTool = {
   name: "create-blog-html",
   description: `Generate HTML blog posts under public/blogs/<appSlug>/<slug>/<locale>.html with a BLOG_META block.
 
+IMPORTANT REQUIREMENTS:
+1. The 'locale' parameter is REQUIRED. If the user does not provide a locale, you MUST ask them to specify which language/locale they want to write the blog in (e.g., 'en-US', 'ko-KR', 'ja-JP', etc.).
+2. The 'content' parameter is REQUIRED. You (the LLM) must generate the HTML content based on the 'topic' and 'locale' provided by the user. The content should be written in the language corresponding to the locale.
+
 Slug rules:
 - slug = slugify(English title, kebab-case ASCII)
 - path: public/blogs/<appSlug>/<slug>/<locale>.html
 - coverImage default: /products/<appSlug>/og-image.png (relative paths are rewritten under /blogs/<app>/<slug>/)
 - overwrite defaults to false (throws when file exists)
 
-Template:
-- Intro connecting topic/app
-- 3-4 sections (problem → solution → tips/examples) using h2/h3
-- Optional relative image example (./images/hero.png)
-- Conclusion + CTA linking to /products/<appSlug>
+HTML Structure (follows public/en-US.html pattern):
+- BLOG_META block at the top with JSON metadata
+- HTML body content: paragraphs (<p>), headings (<h2>, <h3>), images (<img>), lists (<ul>, <li>), horizontal rules (<hr>), etc.
+- You must generate the HTML content based on the topic, making it relevant and engaging for the target locale's language.
 
-Supports multiple locales when locales[] is provided (default single locale). Content language follows locale (ko -> Korean, otherwise English).`,
+Supports multiple locales when locales[] is provided. Each locale gets its own HTML file. For each locale, you must generate appropriate content in that locale's language.`,
   inputSchema,
 };
 
@@ -163,27 +157,27 @@ export async function handleCreateBlogHtml(
     description,
     tags,
     coverImage,
-    includeRelativeImageExample = false,
-    relativeImagePath,
     publishedAt,
     modifiedAt,
     overwrite = false,
+    content,
   } = input;
+
+  if (!content || !content.trim()) {
+    throw new Error(
+      "Content is required. Please provide HTML content for the blog body based on the topic and locale."
+    );
+  }
 
   const resolvedTitle = (title && title.trim()) || topic.trim();
   const slug = slugifyTitle(resolvedTitle);
   const targetLocales = resolveTargetLocales(input);
 
   if (!targetLocales.length) {
-    throw new Error("At least one locale is required to generate blog HTML.");
+    throw new Error(
+      "Locale is required. Please specify which language/locale you want to write the blog in (e.g., 'en-US', 'ko-KR', 'ja-JP')."
+    );
   }
-
-  const shouldIncludeRelativeImage =
-    includeRelativeImageExample || Boolean(relativeImagePath);
-
-  const relativeImage = shouldIncludeRelativeImage
-    ? resolveRelativeImagePath(appSlug, slug, relativeImagePath)
-    : undefined;
 
   const output: CreateBlogHtmlResult = {
     slug,
@@ -244,10 +238,7 @@ export async function handleCreateBlogHtml(
 
     const html = buildBlogHtmlDocument({
       meta,
-      topic,
-      appSlug,
-      includeRelativeImageExample: shouldIncludeRelativeImage,
-      relativeImagePath: relativeImage,
+      content,
     });
 
     fs.writeFileSync(filePath, html, "utf-8");

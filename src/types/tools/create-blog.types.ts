@@ -33,13 +33,18 @@ export interface CreateBlogHtmlInput {
    */
   topic: string;
   /**
-   * Single locale to generate (default en-US). Ignored when locales[] is provided.
+   * Single locale to generate (REQUIRED). Ignored when locales[] is provided.
    */
-  locale?: string;
+  locale: string;
   /**
    * Optional list of locales to generate. Each gets its own HTML file.
    */
   locales?: string[];
+  /**
+   * HTML content for the blog body. REQUIRED. The LLM must generate this based on the topic and locale.
+   * Structure should follow public/en-US.html pattern.
+   */
+  content: string;
   /**
    * Meta description override. If absent, a locale-aware summary is generated from topic/appSlug.
    */
