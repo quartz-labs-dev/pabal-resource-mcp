@@ -2,142 +2,58 @@
 
 MCP (Model Context Protocol) server for bidirectional conversion between ASO (App Store Optimization) and web SEO data.
 
-This library enables seamless reuse of ASO data for web SEO purposes, allowing you to convert ASO metadata directly into web SEO content and vice versa.
+This library enables seamless reuse of ASO data for web SEO purposes, allowing you to convert ASO metadata directly into web SEO content and vice versa. **Build your own synced website** based on ASO data from App Store Connect and Google Play Console, keeping your app store listings and web presence perfectly synchronized.
+
+> 💡 **Example**: Check out [labs.quartz.best](https://labs.quartz.best/) to see a live website built with this library, where app store data is automatically synced to create a beautiful, SEO-optimized web presence.
 
 [![한국어 docs](https://img.shields.io/badge/docs-Korean-green)](./i18n/README.ko.md)
 
-## 🛠️ MCP Client Installation
+## 🛠️ Installation
 
 ### Requirements
 
 - Node.js >= 18
-- MCP client: Cursor, Claude Code, VS Code, Windsurf, etc.
+- [pabal-mcp](https://github.com/quartz-labs-dev/pabal-mcp) must be installed and configured
 
-> [!TIP]
-> If you repeatedly do ASO/store tasks, add a client rule like "always use pabal-web-mcp" so the MCP server auto-invokes without typing it every time.
+### Install as Library
 
-<details>
-<summary><b>Install in Cursor</b></summary>
+Install this library in your website project:
 
-Add to `~/.cursor/mcp.json` (global) or project `.cursor/mcp.json`:
+```bash
+npm install pabal-web-mcp
+# or
+yarn add pabal-web-mcp
+# or
+pnpm add pabal-web-mcp
+```
+
+## 🔐 Configure Credentials
+
+pabal-web-mcp uses the configuration file from `pabal-mcp`. For detailed credential setup instructions (App Store Connect API keys, Google Play service accounts, etc.), please refer to the [pabal-mcp README](https://github.com/quartz-labs-dev/pabal-mcp?tab=readme-ov-file#-configure-credentials).
+
+### ⚠️ Important: Set dataDir Path
+
+**You must set `dataDir` in `~/.config/pabal-mcp/config.json` to the absolute path where your `pabal-web` project is stored on your local machine.**
 
 ```json
 {
-  "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
-    }
+  "dataDir": "/ABSOLUTE/PATH/TO/pabal-web",
+  "appStore": {
+    "issuerId": "xxxx",
+    "keyId": "xxxx",
+    "privateKeyPath": "./app-store-key.p8"
+  },
+  "googlePlay": {
+    "serviceAccountKeyPath": "./google-play-service-account.json"
   }
 }
 ```
 
-Or if installed globally:
+Examples:
 
-```json
-{
-  "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "pabal-web-mcp"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><b>Install in VS Code</b></summary>
-
-Example `settings.json` MCP section:
-
-```json
-"mcp": {
-  "servers": {
-    "pabal-web-mcp": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
-    }
-  }
-}
-```
-
-Or if installed globally:
-
-```json
-"mcp": {
-  "servers": {
-    "pabal-web-mcp": {
-      "type": "stdio",
-      "command": "pabal-web-mcp"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><b>Install in Claude Code</b></summary>
-
-> [!TIP]
-> See the [official Claude Code MCP documentation](https://code.claude.com/docs/en/mcp#setting-up-enterprise-mcp-configuration) for detailed configuration options.
-
-Add to Claude Code MCP settings (JSON format):
-
-```json
-{
-  "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
-    }
-  }
-}
-```
-
-Or if installed globally (`npm install -g pabal-web-mcp`):
-
-```json
-{
-  "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "pabal-web-mcp"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><b>Install in Windsurf</b></summary>
-
-```json
-{
-  "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
-    }
-  }
-}
-```
-
-Or if installed globally:
-
-```json
-{
-  "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "pabal-web-mcp"
-    }
-  }
-}
-```
-
-</details>
+- macOS: `"/Users/username/projects/pabal-web"`
+- Linux: `"/home/username/projects/pabal-web"`
+- Windows: `"C:\\Users\\username\\projects\\pabal-web"`
 
 ## MCP Server
 
@@ -145,87 +61,15 @@ This package includes an MCP server for managing ASO data through Claude or othe
 
 ### Available Tools
 
-| Tool             | Description                                        |
-| ---------------- | -------------------------------------------------- |
-| `aso-to-public`  | Convert ASO data to public config format           |
-| `public-to-aso`  | Convert public config to ASO data format           |
-| `improve-public` | Improve product locale content with AI suggestions |
-| `init-project`   | Initialize a new product project structure         |
+| Tool               | Description                                            |
+| ------------------ | ------------------------------------------------------ |
+| `aso-to-public`    | Convert ASO data to public config format               |
+| `public-to-aso`    | Convert public config to ASO data format               |
+| `improve-public`   | Improve product locale content with AI suggestions     |
+| `init-project`     | Initialize a new product project structure             |
+| `create-blog-html` | Generate static HTML blog posts with BLOG_META headers |
 
-## Usage
-
-### Importing Types
-
-```typescript
-import type {
-  // ASO Types
-  AsoData,
-  AppStoreAsoData,
-  GooglePlayAsoData,
-
-  // Product Types
-  ProductConfig,
-  ProductLocale,
-  LandingPage,
-  LandingHero,
-  LandingScreenshots,
-  LandingFeatures,
-  LandingReviews,
-  LandingCta,
-} from "pabal-web-mcp";
-```
-
-### Importing Utilities
-
-```typescript
-import {
-  // ASO Converter
-  loadAsoFromConfig,
-
-  // Locale Constants
-  DEFAULT_LOCALE,
-  UNIFIED_LOCALES,
-
-  // Locale Converters
-  unifiedToAppStore,
-  unifiedToGooglePlay,
-  appStoreToUnified,
-  googlePlayToUnified,
-} from "pabal-web-mcp";
-```
-
-### Example: Loading ASO Data
-
-```typescript
-import { loadAsoFromConfig } from "pabal-web-mcp";
-
-const asoData = loadAsoFromConfig("my-app");
-console.log(asoData.appStore?.name);
-console.log(asoData.googlePlay?.title);
-```
-
-## Types Reference
-
-### ASO Types
-
-- `AsoData` - Combined ASO data for both stores
-- `AppStoreAsoData` - App Store specific ASO data
-- `GooglePlayAsoData` - Google Play specific ASO data
-- `AppStoreMultilingualAsoData` - Multilingual App Store data
-- `GooglePlayMultilingualAsoData` - Multilingual Google Play data
-
-### Product Types
-
-- `ProductConfig` - Product configuration
-- `ProductLocale` - Localized product content
-- `LandingPage` - Landing page structure
-- `AppPageData` - Complete app page data
-
-### Locale Types
-
-- `UnifiedLocale` - Unified locale code (e.g., "en-US", "ko-KR")
-
-## Supported Locales
+### Supported Locales
 
 Supports all languages supported by each store.
 

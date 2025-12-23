@@ -2,142 +2,58 @@
 
 ASO (App Store Optimization)와 웹 SEO 데이터 간의 양방향 변환을 위한 MCP (Model Context Protocol) 서버입니다.
 
-이 라이브러리는 ASO 데이터를 웹 SEO 목적으로 원활하게 재사용할 수 있도록 하며, ASO 메타데이터를 웹 SEO 콘텐츠로 직접 변환하거나 그 반대로 변환할 수 있습니다.
+이 라이브러리는 ASO 데이터를 웹 SEO 목적으로 원활하게 재사용할 수 있도록 하며, ASO 메타데이터를 웹 SEO 콘텐츠로 직접 변환하거나 그 반대로 변환할 수 있습니다. App Store Connect와 Google Play Console의 ASO 데이터를 기반으로 **나만의 싱크된 웹사이트를 구축**할 수 있으며, 앱 스토어 목록과 웹 프레젠스를 완벽하게 동기화할 수 있습니다.
+
+> 💡 **예시**: [labs.quartz.best](https://labs.quartz.best/)에서 이 라이브러리로 구축된 실제 웹사이트를 확인해보세요. 앱 스토어 데이터가 자동으로 동기화되어 아름답고 SEO 최적화된 웹 프레젠스를 만듭니다.
 
 [![English docs](https://img.shields.io/badge/docs-English-blue)](../README.md)
 
-## 🛠️ MCP 클라이언트 설치
+## 🛠️ 설치
 
 ### 요구사항
 
 - Node.js >= 18
-- MCP 클라이언트: Cursor, Claude Code, VS Code, Windsurf 등
+- [pabal-mcp](https://github.com/quartz-labs-dev/pabal-mcp)가 설치되어 있고 설정되어 있어야 합니다
 
-> [!TIP]
-> ASO/스토어 작업을 반복적으로 수행하는 경우, "always use pabal-web-mcp"와 같은 클라이언트 규칙을 추가하여 매번 입력하지 않고도 MCP 서버가 자동으로 호출되도록 할 수 있습니다.
+### 라이브러리로 설치
 
-<details>
-<summary><b>Cursor에 설치</b></summary>
+웹사이트 프로젝트에 라이브러리로 설치합니다:
 
-`~/.cursor/mcp.json` (전역) 또는 프로젝트 `.cursor/mcp.json`에 추가:
+```bash
+npm install pabal-web-mcp
+# or
+yarn add pabal-web-mcp
+# or
+pnpm add pabal-web-mcp
+```
+
+## 🔐 자격 증명 설정
+
+pabal-web-mcp는 `pabal-mcp`의 설정 파일을 사용합니다. 자세한 자격 증명 설정 방법(App Store Connect API 키, Google Play 서비스 계정 등)은 [pabal-mcp README](https://github.com/quartz-labs-dev/pabal-mcp?tab=readme-ov-file#-configure-credentials)를 참조하세요.
+
+### ⚠️ 중요: dataDir 경로 설정
+
+**`~/.config/pabal-mcp/config.json`에서 `dataDir`을 로컬 머신에 저장된 `pabal-web` 프로젝트의 절대 경로로 설정해야 합니다.**
 
 ```json
 {
-  "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
-    }
+  "dataDir": "/ABSOLUTE/PATH/TO/pabal-web",
+  "appStore": {
+    "issuerId": "xxxx",
+    "keyId": "xxxx",
+    "privateKeyPath": "./app-store-key.p8"
+  },
+  "googlePlay": {
+    "serviceAccountKeyPath": "./google-play-service-account.json"
   }
 }
 ```
 
-또는 전역으로 설치한 경우:
+예시:
 
-```json
-{
-  "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "pabal-web-mcp"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><b>VS Code에 설치</b></summary>
-
-`settings.json` MCP 섹션 예시:
-
-```json
-"mcp": {
-  "servers": {
-    "pabal-web-mcp": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
-    }
-  }
-}
-```
-
-또는 전역으로 설치한 경우:
-
-```json
-"mcp": {
-  "servers": {
-    "pabal-web-mcp": {
-      "type": "stdio",
-      "command": "pabal-web-mcp"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><b>Claude Code에 설치</b></summary>
-
-> [!TIP]
-> 자세한 설정 옵션은 [공식 Claude Code MCP 문서](https://code.claude.com/docs/en/mcp#setting-up-enterprise-mcp-configuration)를 참조하세요.
-
-Claude Code MCP 설정에 추가 (JSON 형식):
-
-```json
-{
-  "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
-    }
-  }
-}
-```
-
-또는 전역으로 설치한 경우 (`npm install -g pabal-web-mcp`):
-
-```json
-{
-  "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "pabal-web-mcp"
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><b>Windsurf에 설치</b></summary>
-
-```json
-{
-  "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
-    }
-  }
-}
-```
-
-또는 전역으로 설치한 경우:
-
-```json
-{
-  "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "pabal-web-mcp"
-    }
-  }
-}
-```
-
-</details>
+- macOS: `"/Users/username/projects/pabal-web"`
+- Linux: `"/home/username/projects/pabal-web"`
+- Windows: `"C:\\Users\\username\\projects\\pabal-web"`
 
 ## MCP 서버
 
@@ -151,83 +67,11 @@ Claude Code MCP 설정에 추가 (JSON 형식):
 | `public-to-aso`  | public config를 ASO 데이터 형식으로 변환    |
 | `improve-public` | AI 제안으로 제품 로케일 콘텐츠 개선         |
 | `init-project`   | 새로운 제품 프로젝트 구조 초기화             |
+| `create-blog-html` | BLOG_META 헤더가 있는 정적 HTML 블로그 포스트 생성 |
 
-## 사용법
+### 지원 로케일
 
-### 타입 가져오기
-
-```typescript
-import type {
-  // ASO Types
-  AsoData,
-  AppStoreAsoData,
-  GooglePlayAsoData,
-
-  // Product Types
-  ProductConfig,
-  ProductLocale,
-  LandingPage,
-  LandingHero,
-  LandingScreenshots,
-  LandingFeatures,
-  LandingReviews,
-  LandingCta,
-} from "pabal-web-mcp";
-```
-
-### 유틸리티 가져오기
-
-```typescript
-import {
-  // ASO Converter
-  loadAsoFromConfig,
-
-  // Locale Constants
-  DEFAULT_LOCALE,
-  UNIFIED_LOCALES,
-
-  // Locale Converters
-  unifiedToAppStore,
-  unifiedToGooglePlay,
-  appStoreToUnified,
-  googlePlayToUnified,
-} from "pabal-web-mcp";
-```
-
-### 예제: ASO 데이터 로드
-
-```typescript
-import { loadAsoFromConfig } from "pabal-web-mcp";
-
-const asoData = loadAsoFromConfig("my-app");
-console.log(asoData.appStore?.name);
-console.log(asoData.googlePlay?.title);
-```
-
-## 타입 참조
-
-### ASO 타입
-
-- `AsoData` - 두 스토어 모두를 위한 통합 ASO 데이터
-- `AppStoreAsoData` - App Store 전용 ASO 데이터
-- `GooglePlayAsoData` - Google Play 전용 ASO 데이터
-- `AppStoreMultilingualAsoData` - 다국어 App Store 데이터
-- `GooglePlayMultilingualAsoData` - 다국어 Google Play 데이터
-
-### 제품 타입
-
-- `ProductConfig` - 제품 설정
-- `ProductLocale` - 현지화된 제품 콘텐츠
-- `LandingPage` - 랜딩 페이지 구조
-- `AppPageData` - 완전한 앱 페이지 데이터
-
-### 로케일 타입
-
-- `UnifiedLocale` - 통합 로케일 코드 (예: "en-US", "ko-KR")
-
-## 지원 로케일
-
-각 스토어에서 지원하는 모든 언어 지원
+각 스토어에서 지원하는 모든 언어를 지원합니다.
 
 | Unified | App Store | Google Play |
 | ------- | --------- | ----------- |
@@ -259,8 +103,3 @@ ASO와 SEO를 함께 관리하고 싶으신가요? **Pabal Web**을 확인해보
 **Pabal Web**은 ASO, SEO, Google Search Console 인덱싱 등을 통합 관리하기 위한 완전한 솔루션을 제공하는 Next.js 기반 웹 인터페이스입니다.
 
 👉 [Pabal Web 방문하기](https://pabal.quartz.best/)
-
-
-
-
-
