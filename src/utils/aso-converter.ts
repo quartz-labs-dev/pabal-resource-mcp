@@ -4,6 +4,8 @@
  * config.json (source of truth) ↔ aso-data.json (build artifact) 변환 유틸리티
  */
 
+// Import Node.js modules - these will be replaced with empty modules in browser builds
+// via package.json "browser" field configuration
 import fs from "node:fs";
 import path from "node:path";
 import type {
@@ -130,7 +132,7 @@ export function loadAsoFromConfig(slug: string): AsoData {
     // Load all locale files
     const localeFiles = fs
       .readdirSync(localesDir)
-      .filter((f) => f.endsWith(".json"));
+      .filter((f: string) => f.endsWith(".json"));
     const locales: Record<string, ProductLocale> = {};
 
     for (const file of localeFiles) {

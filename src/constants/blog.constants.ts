@@ -8,4 +8,3 @@
  * Used when creating blog posts about the developer themselves
  */
 export const DEFAULT_APP_SLUG = "developer";
-

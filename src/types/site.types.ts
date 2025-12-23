@@ -66,6 +66,3 @@ export interface SiteData {
     };
   };
 }
-
-
-
