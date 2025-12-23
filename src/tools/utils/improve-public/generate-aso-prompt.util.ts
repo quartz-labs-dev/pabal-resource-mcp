@@ -6,6 +6,8 @@ interface GenerateAsoPromptArgs {
   primaryLocale: string;
   targetLocales: string[];
   localeSections: string[];
+  keywordResearchByLocale: Record<string, string[]>;
+  keywordResearchDirByLocale: Record<string, string>;
 }
 
 export interface GenerateKeywordLocalizationPromptArgs
@@ -25,7 +27,14 @@ export interface GenerateKeywordLocalizationPromptArgs
 export function generatePrimaryOptimizationPrompt(
   args: GenerateAsoPromptArgs
 ): string {
-  const { slug, category, primaryLocale, localeSections } = args;
+  const {
+    slug,
+    category,
+    primaryLocale,
+    localeSections,
+    keywordResearchByLocale,
+    keywordResearchDirByLocale,
+  } = args;
 
   let prompt = `# ASO Optimization - Stage 1: Primary Locale\n\n`;
   prompt += `Product: ${slug} | Category: ${
@@ -33,19 +42,21 @@ export function generatePrimaryOptimizationPrompt(
   } | Primary: ${primaryLocale}\n\n`;
 
   prompt += `## Task\n\n`;
-  prompt += `Optimize the PRIMARY locale (${primaryLocale}) with keyword research + full ASO field optimization.\n\n`;
+  prompt += `Optimize the PRIMARY locale (${primaryLocale}) using **saved keyword research** + full ASO field optimization.\n\n`;
 
   prompt += `## Step 1: Keyword Research (${primaryLocale})\n\n`;
-  prompt += `**Strategies** (apply all 5):\n`;
-  prompt += `1. **App Store**: Search top apps in category → extract keywords from titles/descriptions\n`;
-  prompt += `2. **Description-Based**: Use current shortDescription → find related ASO keywords\n`;
-  prompt += `3. **Feature-Based**: Identify 2-3 core features → search feature-specific keywords\n`;
-  prompt += `4. **User Intent**: Research user search patterns for the app's use case\n`;
-  prompt += `5. **Competitor**: Analyze 3+ successful apps → find common keyword patterns\n\n`;
-  prompt += `**Output**: 10 high-performing keywords\n\n`;
+  const researchSections = keywordResearchByLocale[primaryLocale] || [];
+  const researchDir = keywordResearchDirByLocale[primaryLocale];
+  if (researchSections.length > 0) {
+    prompt += `Use the **saved keyword research below**. Do NOT invent new keywords. Choose the top 10 from the recommended set.\n\n`;
+    prompt += `Saved research:\n${researchSections.join("\n")}\n\n`;
+  } else {
+    prompt += `No saved keyword research found at ${researchDir}.\n`;
+    prompt += `**Stop and request action**: Run the 'keyword-research' tool with slug='${slug}', locale='${primaryLocale}', and the appropriate platform/country, then rerun improve-public stage 1.\n\n`;
+  }
 
   prompt += `## Step 2: Optimize All Fields (${primaryLocale})\n\n`;
-  prompt += `Apply the 10 keywords to ALL fields:\n`;
+  prompt += `Apply the selected keywords to ALL fields:\n`;
   prompt += `- \`aso.title\` (≤30): **"App Name: Primary Keyword"** format (app name in English, keyword in target language, keyword starts with uppercase after the colon)\n`;
   prompt += `- \`aso.subtitle\` (≤30): Complementary keywords\n`;
   prompt += `- \`aso.shortDescription\` (≤80): Primary keywords (no emojis/CAPS)\n`;
@@ -75,9 +86,9 @@ export function generatePrimaryOptimizationPrompt(
   }\n\n`;
 
   prompt += `## Output Format\n\n`;
-  prompt += `**1. Keyword Research**\n`;
-  prompt += `   - Query: "[query]" → Found: [apps] → Keywords: [list]\n`;
-  prompt += `   - Final 10 keywords: [list] with rationale\n\n`;
+  prompt += `**1. Keyword Research (from saved data)**\n`;
+  prompt += `   - Cite file(s) used and list the selected top 10 keywords (no new research)\n`;
+  prompt += `   - Rationale: why these 10 were chosen from saved research\n\n`;
   prompt += `**2. Optimized JSON** (complete ${primaryLocale} locale structure)\n`;
   prompt += `   - MUST include complete \`aso\` object with all fields\n`;
   prompt += `   - MUST include complete \`landing\` object with:\n`;
@@ -115,6 +126,8 @@ export function generateKeywordLocalizationPrompt(
     targetLocales,
     localeSections,
     optimizedPrimary,
+    keywordResearchByLocale,
+    keywordResearchDirByLocale,
     batchLocales,
     batchIndex,
     totalBatches,
@@ -150,7 +163,7 @@ export function generateKeywordLocalizationPrompt(
   prompt += `**CRITICAL: Only process locales that already exist in public/products/${slug}/locales/.**\n`;
   prompt += `**Do NOT create new locale files - only improve existing ones.**\n\n`;
   prompt += `For EACH target locale in this batch:\n`;
-  prompt += `1. Research 10 language-specific keywords\n`;
+  prompt += `1. Use SAVED keyword research (see per-locale data below). Do NOT invent keywords.\n`;
   prompt += `2. Replace keywords in translated content (preserve structure/tone/context)\n`;
   prompt += `3. Validate character limits\n`;
   prompt += `4. **SAVE the updated JSON to file** using the save-locale-file tool (only if file exists)\n\n`;
@@ -159,11 +172,17 @@ export function generateKeywordLocalizationPrompt(
   prompt += `Use this as the base structure/messaging:\n\`\`\`json\n${optimizedPrimary}\n\`\`\`\n\n`;
 
   prompt += `## Keyword Research (Per Locale)\n\n`;
-  prompt += `For EACH locale, perform lightweight keyword research:\n`;
-  prompt += `1. **App Store Search**: "[core feature] [lang] 앱/app" → top 5 apps\n`;
-  prompt += `2. **Competitor Keywords**: Extract keywords from successful apps in that language\n`;
-  prompt += `3. **Search Trends**: Check what users actually search in that language\n\n`;
-  prompt += `**Output**: 10 keywords per locale\n\n`;
+  nonPrimaryLocales.forEach((loc) => {
+    const researchSections = keywordResearchByLocale[loc] || [];
+    const researchDir = keywordResearchDirByLocale[loc];
+    if (researchSections.length > 0) {
+      prompt += `Locale ${loc}: use saved research below. Do NOT invent keywords.\n${researchSections.join(
+        "\n"
+      )}\n\n`;
+    } else {
+      prompt += `Locale ${loc}: no saved keyword research found at ${researchDir}. Stop and request running 'keyword-research' tool (slug='${slug}', locale='${loc}', platform/country as appropriate—match the store locale), then rerun stage 2.\n\n`;
+    }
+  });
 
   prompt += `## Keyword Replacement Strategy\n\n`;
   prompt += `For EACH locale:\n`;
@@ -206,7 +225,7 @@ export function generateKeywordLocalizationPrompt(
 
   prompt += `## Workflow\n\n`;
   prompt += `Process EACH locale in this batch sequentially:\n`;
-  prompt += `1. Research 10 keywords for locale\n`;
+  prompt += `1. Use saved keyword research (or pause if missing and request keyword-research run)\n`;
   prompt += `2. Replace keywords in ALL fields:\n`;
   prompt += `   - \`aso.keywords\` array\n`;
   prompt += `   - \`aso.title\`, \`aso.subtitle\`, \`aso.shortDescription\`\n`;
@@ -237,9 +256,9 @@ export function generateKeywordLocalizationPrompt(
   prompt += `## Output Format (Per Locale)\n\n`;
   prompt += `For EACH locale, provide:\n\n`;
   prompt += `### Locale [locale-code]:\n\n`;
-  prompt += `**1. Keyword Research**\n`;
-  prompt += `   - Query: "[query]" → Keywords: [list]\n`;
-  prompt += `   - Final 10: [list] with rationale\n\n`;
+  prompt += `**1. Keyword Research (saved)**\n`;
+  prompt += `   - Cite file(s) used; list selected top 10 keywords (no new research)\n`;
+  prompt += `   - Rationale: why these were chosen from saved research\n\n`;
   prompt += `**2. Updated JSON** (complete locale structure with keyword replacements)\n`;
   prompt += `   - MUST include complete \`aso\` object\n`;
   prompt += `   - MUST include complete \`landing\` object with ALL sections:\n`;

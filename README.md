@@ -61,13 +61,32 @@ This package includes an MCP server for managing ASO data through Claude or othe
 
 ### Available Tools
 
-| Tool               | Description                                            |
-| ------------------ | ------------------------------------------------------ |
-| `aso-to-public`    | Convert ASO data to public config format               |
-| `public-to-aso`    | Convert public config to ASO data format               |
-| `improve-public`   | Improve product locale content with AI suggestions     |
-| `init-project`     | Initialize a new product project structure             |
-| `create-blog-html` | Generate static HTML blog posts with BLOG_META headers |
+| Tool               | Description                                              |
+| ------------------ | -------------------------------------------------------- |
+| `aso-to-public`    | Convert ASO data to public config format                 |
+| `public-to-aso`    | Convert public config to ASO data format                 |
+| `keyword-research` | Plan/persist ASO keyword research (.aso/keywordResearch) |
+| `improve-public`   | Improve product locale content with AI suggestions       |
+| `init-project`     | Initialize a new product project structure               |
+| `create-blog-html` | Generate static HTML blog posts with BLOG_META headers   |
+
+### Using external keyword MCP ([appreply-co/mcp-appstore](https://github.com/appreply-co/mcp-appstore))
+
+1. Install deps in the existing clone: `cd external-tools/mcp-appstore && npm install`
+2. Run server: `node server.js` (same cwd; `npm start` also works). If your MCP client allows, let the LLM start this process before keyword research and stop it after; otherwise start/stop it manually.
+3. Register in your MCP client (example):
+   ```json
+   {
+     "mcpServers": {
+       "mcp-appstore": {
+         "command": "node",
+         "args": ["/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"],
+         "cwd": "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore"
+       }
+     }
+   }
+   ```
+4. Use it with `keyword-research` (saves to `.aso/keywordResearch/...`) before `improve-public` to supply keyword data.
 
 ### Supported Locales
 

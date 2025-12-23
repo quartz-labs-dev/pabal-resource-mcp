@@ -32,6 +32,11 @@ import {
   createBlogHtmlInputSchema,
   handleCreateBlogHtml,
 } from "./create-blog-html.js";
+import {
+  keywordResearchTool,
+  keywordResearchInputSchema,
+  handleKeywordResearch,
+} from "./keyword-research.js";
 import type { z } from "zod";
 
 export interface ToolInfo {
@@ -87,6 +92,14 @@ export const tools: ToolInfo[] = [
     handler: handleCreateBlogHtml,
     category: "Content",
   },
+  {
+    name: keywordResearchTool.name,
+    description: keywordResearchTool.description,
+    inputSchema: keywordResearchTool.inputSchema,
+    zodSchema: keywordResearchInputSchema,
+    handler: handleKeywordResearch,
+    category: "ASO Research",
+  },
 ];
 
 /**
@@ -99,6 +112,7 @@ export function getToolDefinitions() {
     improvePublicTool,
     initProjectTool,
     createBlogHtmlTool,
+    keywordResearchTool,
   ];
 }
 

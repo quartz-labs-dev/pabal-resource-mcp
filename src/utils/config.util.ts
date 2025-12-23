@@ -74,6 +74,13 @@ export function getPublicDir(): string {
 }
 
 /**
+ * Get the keywordResearch directory path (dataDir/.aso/keywordResearch)
+ */
+export function getKeywordResearchDir(): string {
+  return path.join(getAsoDataDir(), ".aso", "keywordResearch");
+}
+
+/**
  * Get the products directory path (dataDir/public/products)
  */
 export function getProductsDir(): string {

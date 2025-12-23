@@ -13,6 +13,7 @@ import {
   type GenerateKeywordLocalizationPromptArgs,
 } from "./utils/improve-public/generate-aso-prompt.util.js";
 import { saveLocaleFile } from "./utils/improve-public/save-locale-file.util.js";
+import { loadKeywordResearchForLocale } from "./utils/improve-public/load-keyword-research.util.js";
 
 const FIELD_LIMITS_DOC_PATH = "docs/aso/ASO_FIELD_LIMITS.md";
 
@@ -190,12 +191,23 @@ export async function handleImprovePublic(
     );
   }
 
+  // Load keyword research data per locale (from .aso/keywordResearch)
+  const keywordResearchByLocale: Record<string, string[]> = {};
+  const keywordResearchDirByLocale: Record<string, string> = {};
+  for (const loc of targetLocales) {
+    const research = loadKeywordResearchForLocale(slug, loc);
+    keywordResearchByLocale[loc] = research.sections;
+    keywordResearchDirByLocale[loc] = research.researchDir;
+  }
+
   const baseArgs = {
     slug,
     category,
     primaryLocale,
     targetLocales,
     localeSections,
+    keywordResearchByLocale,
+    keywordResearchDirByLocale,
   };
 
   // Stage 1: Primary optimization
@@ -259,6 +271,8 @@ export async function handleImprovePublic(
         primaryLocale: baseArgs.primaryLocale,
         targetLocales: baseArgs.targetLocales,
         localeSections: baseArgs.localeSections,
+        keywordResearchByLocale: baseArgs.keywordResearchByLocale,
+        keywordResearchDirByLocale: baseArgs.keywordResearchDirByLocale,
         optimizedPrimary,
         batchLocales,
         batchIndex: currentBatchIndex,

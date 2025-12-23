@@ -61,13 +61,32 @@ pabal-web-mcp는 `pabal-mcp`의 설정 파일을 사용합니다. 자세한 자�
 
 ### 사용 가능한 도구
 
-| 도구             | 설명                                        |
-| ---------------- | ------------------------------------------- |
-| `aso-to-public`  | ASO 데이터를 public config 형식으로 변환    |
-| `public-to-aso`  | public config를 ASO 데이터 형식으로 변환    |
-| `improve-public` | AI 제안으로 제품 로케일 콘텐츠 개선         |
-| `init-project`   | 새로운 제품 프로젝트 구조 초기화             |
+| 도구               | 설명                                               |
+| ------------------ | -------------------------------------------------- |
+| `aso-to-public`    | ASO 데이터를 public config 형식으로 변환           |
+| `public-to-aso`    | public config를 ASO 데이터 형식으로 변환           |
+| `keyword-research` | ASO 키워드 리서치 계획/저장 (.aso/keywordResearch) |
+| `improve-public`   | AI 제안으로 제품 로케일 콘텐츠 개선                |
+| `init-project`     | 새로운 제품 프로젝트 구조 초기화                   |
 | `create-blog-html` | BLOG_META 헤더가 있는 정적 HTML 블로그 포스트 생성 |
+
+### 외부 키워드 MCP ([appreply-co/mcp-appstore](https://github.com/appreply-co/mcp-appstore)) 연결
+
+1. 의존성 설치(이미 클론되어 있음): `cd /ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore && npm install`
+2. 서버 실행: `node server.js` (같은 cwd, `npm start`도 동작). MCP 클라이언트가 지원하면 LLM이 키워드 리서치 전 이 프로세스를 켜고 끝나면 끄도록 하세요. 지원하지 않으면 사용자가 직접 start/stop 합니다.
+3. MCP 클라이언트에 등록 (예시):
+   ```json
+   {
+     "mcpServers": {
+       "mcp-appstore": {
+         "command": "node",
+         "args": ["/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"],
+         "cwd": "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore"
+       }
+     }
+   }
+   ```
+4. `keyword-research` 실행 시 이 서버의 도구들을 사용해 키워드 데이터를 `.aso/keywordResearch/...`에 저장하고, 이후 `improve-public`에서 활용합니다.
 
 ### 지원 로케일
 
