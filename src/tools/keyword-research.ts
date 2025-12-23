@@ -3,6 +3,10 @@ import path from "node:path";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { getKeywordResearchDir } from "../utils/config.util.js";
+import {
+  loadProductLocales,
+  resolvePrimaryLocale,
+} from "./utils/improve-public/load-product-locales.util.js";
 
 const TOOL_NAME = "keyword-research";
 
@@ -146,6 +150,17 @@ function saveJsonFile({
   return outputPath;
 }
 
+function normalizeKeywords(raw?: string[] | string): string[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) {
+    return raw.map((k) => k.trim()).filter((k) => k.length > 0);
+  }
+  return raw
+    .split(",")
+    .map((k) => k.trim())
+    .filter((k) => k.length > 0);
+}
+
 export async function handleKeywordResearch(
   input: KeywordResearchInput
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
@@ -160,6 +175,38 @@ export async function handleKeywordResearch(
     writeTemplate = false,
     researchData,
   } = input;
+
+  const { config, locales } = loadProductLocales(slug);
+  const primaryLocale = resolvePrimaryLocale(config, locales);
+  const primaryLocaleData = locales[primaryLocale];
+
+  // Derive auto seeds/competitors if not provided
+  const autoSeeds: string[] = [];
+  const autoCompetitors: KeywordResearchInput["competitorApps"] = [];
+
+  if (primaryLocaleData?.aso?.title) {
+    autoSeeds.push(primaryLocaleData.aso.title);
+  }
+  const parsedKeywords = normalizeKeywords(primaryLocaleData?.aso?.keywords);
+  autoSeeds.push(...parsedKeywords.slice(0, 5));
+
+  if (config?.name) autoSeeds.push(config.name);
+  if (config?.tagline) autoSeeds.push(config.tagline);
+
+  if (platform === "ios") {
+    if (config?.appStoreAppId) {
+      autoCompetitors.push({ appId: String(config.appStoreAppId), platform });
+    } else if (config?.bundleId) {
+      autoCompetitors.push({ appId: config.bundleId, platform });
+    }
+  } else if (platform === "android" && config?.packageName) {
+    autoCompetitors.push({ appId: config.packageName, platform });
+  }
+
+  const resolvedSeeds =
+    seedKeywords.length > 0 ? seedKeywords : Array.from(new Set(autoSeeds));
+  const resolvedCompetitors =
+    competitorApps.length > 0 ? competitorApps : autoCompetitors;
 
   const resolvedCountry =
     country ||
@@ -196,8 +243,8 @@ export async function handleKeywordResearch(
           locale,
           platform,
           country: resolvedCountry,
-          seedKeywords,
-          competitorApps,
+          seedKeywords: resolvedSeeds,
+          competitorApps: resolvedCompetitors,
         });
 
     outputPath = saveJsonFile({ researchDir, fileName, payload });
@@ -210,8 +257,8 @@ export async function handleKeywordResearch(
       locale,
       platform,
       country: resolvedCountry,
-      seedKeywords,
-      competitorApps,
+      seedKeywords: resolvedSeeds,
+      competitorApps: resolvedCompetitors,
     }),
     null,
     2
@@ -220,16 +267,21 @@ export async function handleKeywordResearch(
   const lines: string[] = [];
   lines.push(`# Keyword research plan (${slug})`);
   lines.push(`Locale: ${locale} | Platform: ${platform} | Country: ${resolvedCountry}`);
+  lines.push(`Primary locale detected: ${primaryLocale}`);
   lines.push(
-    `Seeds: ${seedKeywords.length > 0 ? seedKeywords.join(", ") : "(none set)"}`
+    `Seeds: ${
+      resolvedSeeds.length > 0
+        ? resolvedSeeds.join(", ")
+        : "(none set; add seedKeywords or ensure ASO keywords/title exist)"
+    }`
   );
   lines.push(
-    `Competitors: ${
-      competitorApps.length > 0
-        ? competitorApps
+    `Competitors (from config if empty): ${
+      resolvedCompetitors.length > 0
+        ? resolvedCompetitors
             .map((c) => `${c.platform}:${c.appId}`)
             .join(", ")
-        : "(none set)"
+        : "(none set; add competitorApps or set appStoreAppId/bundleId/packageName in config.json)"
     }`
   );
   lines.push("");
