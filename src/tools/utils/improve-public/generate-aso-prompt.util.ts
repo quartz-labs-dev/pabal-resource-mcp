@@ -44,11 +44,19 @@ export function generatePrimaryOptimizationPrompt(
   prompt += `## Task\n\n`;
   prompt += `Optimize the PRIMARY locale (${primaryLocale}) using **saved keyword research** + full ASO field optimization.\n\n`;
 
-  prompt += `## Step 1: Keyword Research (${primaryLocale})\n\n`;
+  prompt += `## Step 1: Use Saved Keyword Research (${primaryLocale})\n\n`;
   const researchSections = keywordResearchByLocale[primaryLocale] || [];
   const researchDir = keywordResearchDirByLocale[primaryLocale];
   if (researchSections.length > 0) {
-    prompt += `Use the **saved keyword research below**. Do NOT invent new keywords. Choose the top 10 from the recommended set.\n\n`;
+    prompt += `**CRITICAL: Use ONLY the saved keyword research below. Do NOT invent or research new keywords.**\n\n`;
+    prompt += `The research data includes:\n`;
+    prompt += `- **Tier 1 (Core):** Use these in title and subtitle - highest traffic, best opportunity\n`;
+    prompt += `- **Tier 2 (Feature):** Use these in keywords field and descriptions\n`;
+    prompt += `- **Tier 3 (Longtail):** Use these in intro, outro, and feature descriptions\n`;
+    prompt += `- **Keyword Details:** Each keyword has traffic/difficulty scores and rationale - use this to prioritize\n`;
+    prompt += `- **Strategy:** Overall optimization strategy based on competitor analysis\n`;
+    prompt += `- **Keyword Gaps:** Opportunities where competitors are weak\n`;
+    prompt += `- **User Language Patterns:** Phrases real users use in reviews - incorporate naturally\n\n`;
     prompt += `Saved research:\n${researchSections.join("\n")}\n\n`;
   } else {
     prompt += `No saved keyword research found at ${researchDir}.\n`;
@@ -56,26 +64,31 @@ export function generatePrimaryOptimizationPrompt(
   }
 
   prompt += `## Step 2: Optimize All Fields (${primaryLocale})\n\n`;
-  prompt += `Apply the selected keywords to ALL fields:\n`;
-  prompt += `- \`aso.title\` (≤30): **"App Name: Primary Keyword"** format (app name in English, keyword in target language, keyword starts with uppercase after the colon)\n`;
-  prompt += `  - **Do NOT translate/rename the app name**; keep the original English app name across all locales.\n`;
-  prompt += `- \`aso.subtitle\` (≤30): Complementary keywords\n`;
-  prompt += `- \`aso.shortDescription\` (≤80): Primary keywords (no emojis/CAPS)\n`;
-  prompt += `- \`aso.keywords\` (≤100): Comma-separated 10 keywords\n`;
-  prompt += `- \`aso.template.intro\` (≤300): Keyword-rich, use full length\n`;
-  prompt += `- \`aso.template.outro\` (≤200): Natural keyword integration\n`;
-  prompt += `- \`landing.hero.title\`: Primary keywords\n`;
-  prompt += `- \`landing.hero.description\`: Keywords if present\n`;
-  prompt += `- \`landing.screenshots.images[].title\`: Keywords in screenshot titles\n`;
-  prompt += `- \`landing.screenshots.images[].description\`: Keywords in screenshot descriptions\n`;
-  prompt += `- \`landing.features.items[].title\`: Keywords in feature titles\n`;
-  prompt += `- \`landing.features.items[].body\`: Keywords in feature descriptions\n`;
-  prompt += `- \`landing.reviews.title\`: Keywords if applicable\n`;
-  prompt += `- \`landing.reviews.description\`: Keywords if applicable\n`;
-  prompt += `- \`landing.cta.headline\`: Keywords if applicable\n`;
-  prompt += `- \`landing.cta.description\`: Keywords if applicable\n\n`;
+  prompt += `**Apply keywords strategically based on tier priority:**\n\n`;
+  prompt += `### Tier 1 Keywords (Core) → Title & Subtitle\n`;
+  prompt += `- \`aso.title\` (≤30): **"App Name: [Tier1 Keyword]"** format\n`;
+  prompt += `  - App name in English, keyword in target language, uppercase after colon\n`;
+  prompt += `  - **Do NOT translate/rename the app name**\n`;
+  prompt += `- \`aso.subtitle\` (≤30): Use remaining Tier 1 keywords\n`;
+  prompt += `- \`aso.shortDescription\` (≤80): Tier 1 + Tier 2 keywords (no emojis/CAPS)\n\n`;
+  prompt += `### Tier 2 Keywords (Feature) → Keywords Field & Descriptions\n`;
+  prompt += `- \`aso.keywords\` (≤100): ALL tiers, comma-separated (Tier 1 first, then Tier 2, then Tier 3)\n`;
+  prompt += `- \`landing.hero.title\`: Tier 1 + Tier 2 keywords\n`;
+  prompt += `- \`landing.hero.description\`: Tier 2 keywords naturally integrated\n`;
+  prompt += `- \`landing.screenshots.images[].title\`: Tier 2 keywords\n`;
+  prompt += `- \`landing.screenshots.images[].description\`: Tier 2 + Tier 3 keywords\n\n`;
+  prompt += `### Tier 3 Keywords (Longtail) → Content Sections\n`;
+  prompt += `- \`aso.template.intro\` (≤300): Tier 2 + Tier 3 keywords, keyword-rich, use full length\n`;
+  prompt += `- \`aso.template.outro\` (≤200): Tier 3 keywords, natural integration\n`;
+  prompt += `- \`landing.features.items[].title\`: Tier 2 keywords\n`;
+  prompt += `- \`landing.features.items[].body\`: Tier 3 keywords with user language patterns\n`;
+  prompt += `- \`landing.reviews.title/description\`: Keywords if applicable\n`;
+  prompt += `- \`landing.cta.headline/description\`: Keywords if applicable\n\n`;
+  prompt += `### User Language Integration\n`;
+  prompt += `- Use **User Language Patterns** from research in intro/outro/features\n`;
+  prompt += `- These are actual phrases users search for - incorporate naturally\n\n`;
   prompt += `**Guidelines**: 2.5-3% keyword density, natural flow, cultural appropriateness\n`;
-  prompt += `**CRITICAL**: You MUST include the complete \`landing\` object in your optimized JSON output, with all screenshots, features, reviews, and cta sections properly translated and keyword-optimized.\n\n`;
+  prompt += `**CRITICAL**: You MUST include the complete \`landing\` object in your optimized JSON output.\n\n`;
 
   prompt += `## Step 3: Validate\n\n`;
   prompt += `Check all limits: title ≤30, subtitle ≤30, shortDescription ≤80, keywords ≤100, intro ≤300, outro ≤200\n\n`;

@@ -83,11 +83,31 @@ export const keywordResearchTool = {
 
 **IMPORTANT:** Always use 'search-app' tool first to resolve the exact slug before calling this tool. The user may provide an approximate name, bundleId, or packageName - search-app will find and return the correct slug. Never pass user input directly as slug.
 
-**Locale coverage:** If the product ships multiple locales, run this tool SEPARATELY for EVERY locale (including non-primary markets). Do NOT rely on "template-only" coverage for secondary locales—produce a full keyword research file per locale.
+## CRITICAL: Multi-Locale Execution Plan
 
-**Platform coverage:** Use search-app results to confirm supported platforms/locales (App Store + Google Play). Run this tool for EVERY supported platform/locale combination—ios + android runs are separate.
+**MANDATORY WORKFLOW - Complete each locale fully before moving to next:**
 
-Run this before improve-public. It gives a concrete MCP-powered research plan and a storage path under .aso/keywordResearch/products/[slug]/locales/[locale]/. Optionally writes a template or saves raw JSON from mcp-appstore tools.`,
+For EACH locale+platform combination, execute this cycle:
+1. **Plan:** Call keyword-research(slug, locale, platform) with writeTemplate=false → get research plan
+2. **Research:** Execute COMPLETE mcp-appstore workflow (all 16 steps) for that locale
+3. **Save:** Call keyword-research again with researchData or researchDataPath → persist actual data
+4. **Next:** Move to next locale+platform and repeat steps 1-3
+
+**IMPORTANT: Research → Save → Next pattern**
+- Complete ONE locale fully (research + save) before starting the next
+- This prevents data loss if the session is interrupted
+- Each locale's data is persisted immediately after research
+
+**FORBIDDEN:**
+- ❌ Using writeTemplate=true as final output
+- ❌ Skipping secondary locales
+- ❌ Researching multiple locales then saving all at once at the end
+- ❌ Stopping before all locale+platform combinations are done
+
+**REQUIRED:**
+- ✅ Research locale → Save locale → Move to next (one at a time)
+- ✅ Run for EVERY platform (ios AND android separately)
+- ✅ Use researchData or researchDataPath to save (NOT writeTemplate)`,
   inputSchema,
 };
 
@@ -244,7 +264,6 @@ export async function handleKeywordResearch(
   const { config, locales } = loadProductLocales(slug);
   const primaryLocale = resolvePrimaryLocale(config, locales);
   const productLocales = Object.keys(locales);
-  const remainingLocales = productLocales.filter((loc) => loc !== locale);
   const primaryLocaleData = locales[primaryLocale];
   const { supportedLocales, path: supportedPath } =
     getSupportedLocalesForSlug(slug, platform);
@@ -416,24 +435,62 @@ export async function handleKeywordResearch(
       `Registered supported locales not found for ${platform} (checked: ${supportedPath}).`
     );
   }
+  // Build complete task matrix
+  const allCombinations: Array<{ loc: string; plat: string }> = [];
+  const platformsToRun = declaredPlatforms.length > 0 ? declaredPlatforms : [platform];
+  for (const plat of platformsToRun) {
+    for (const loc of productLocales.length > 0 ? productLocales : [locale]) {
+      allCombinations.push({ loc, plat });
+    }
+  }
+  const currentIndex = allCombinations.findIndex(
+    (c) => c.loc === locale && c.plat === platform
+  );
+  const completedCount = currentIndex >= 0 ? currentIndex : 0;
+  const remainingCombinations = allCombinations.slice(currentIndex + 1);
+
   if (productLocales.length > 0) {
     lines.push(
       `Existing product locales (${productLocales.length}): ${productLocales.join(", ")}`
     );
-    lines.push(
-      "MANDATORY: Run FULL keyword research (mcp-appstore workflow) for EVERY locale above—no template-only coverage for secondary markets."
-    );
-    if (remainingLocales.length > 0) {
-      lines.push(
-        `After finishing ${locale}, immediately queue runs for: ${remainingLocales.join(", ")}`
-      );
-    }
-    if (declaredPlatforms.length > 1) {
-      lines.push(
-        "Also run separate FULL keyword research for each supported platform (e.g., ios + android) across all locales."
-      );
-    }
   }
+
+  // Show execution progress tracker
+  lines.push("");
+  lines.push("---");
+  lines.push("## 🎯 EXECUTION PROGRESS TRACKER");
+  lines.push("");
+  lines.push(`**Total combinations to complete:** ${allCombinations.length} (${platformsToRun.length} platforms × ${productLocales.length || 1} locales)`);
+  lines.push(`**Current:** ${locale} + ${platform} (${completedCount + 1}/${allCombinations.length})`);
+  lines.push("");
+
+  if (researchData || researchDataPath) {
+    lines.push(`✅ SAVED: ${locale} + ${platform} - Full research data persisted`);
+  } else if (writeTemplate) {
+    lines.push(`⚠️ WARNING: ${locale} + ${platform} - Only template written! You MUST run full mcp-appstore research and save actual data.`);
+  } else {
+    lines.push(`📋 PLANNING: ${locale} + ${platform} - Research plan shown. Now execute mcp-appstore workflow.`);
+  }
+
+  if (remainingCombinations.length > 0) {
+    lines.push("");
+    lines.push("## ⏭️ MANDATORY NEXT STEPS");
+    lines.push("");
+    lines.push("**After completing current locale+platform, you MUST continue with:**");
+    lines.push("");
+    remainingCombinations.forEach((combo, idx) => {
+      lines.push(`${idx + 1}. keyword-research(slug="${slug}", locale="${combo.loc}", platform="${combo.plat}") → full mcp-appstore workflow → save results`);
+    });
+    lines.push("");
+    lines.push("⛔ DO NOT mark this task as complete until ALL combinations above have FULL research data (not templates).");
+  } else {
+    lines.push("");
+    lines.push("## ✅ FINAL STEP");
+    lines.push("");
+    lines.push("This is the LAST locale+platform combination. After saving full research data for this one, the task is complete.");
+  }
+  lines.push("---");
+  lines.push("");
   lines.push(
     `Seeds: ${
       resolvedSeeds.length > 0
