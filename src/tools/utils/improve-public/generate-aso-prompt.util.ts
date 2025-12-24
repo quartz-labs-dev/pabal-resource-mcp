@@ -92,7 +92,9 @@ export function generatePrimaryOptimizationPrompt(
   prompt += `**CRITICAL**: You MUST include the complete \`landing\` object in your optimized JSON output.\n\n`;
 
   prompt += `## Step 3: Validate\n\n`;
-  prompt += `Check all limits: title ≤30, subtitle ≤30, shortDescription ≤80, keywords ≤100, intro ≤300, outro ≤200\n\n`;
+  prompt += `Check all limits: title ≤30, subtitle ≤30, shortDescription ≤80, keywords ≤100, intro ≤300, outro ≤200\n`;
+  prompt += `- Remove keyword duplicates (unique list; avoid repeating title/subtitle terms verbatim)\n`;
+  prompt += `- Ensure App Store/Play Store rules from ${FIELD_LIMITS_DOC_PATH} are satisfied (no disallowed characters/formatting)\n\n`;
 
   prompt += `## Current Data\n\n`;
   prompt += `${
@@ -116,9 +118,10 @@ export function generatePrimaryOptimizationPrompt(
   prompt += `   - title: X/30 ✓/✗\n`;
   prompt += `   - subtitle: X/30 ✓/✗\n`;
   prompt += `   - shortDescription: X/80 ✓/✗\n`;
-  prompt += `   - keywords: X/100 ✓/✗\n`;
+  prompt += `   - keywords: X/100 ✓/✗ (deduped ✓/✗)\n`;
   prompt += `   - intro: X/300 ✓/✗\n`;
   prompt += `   - outro: X/200 ✓/✗\n`;
+  prompt += `   - Store rules (${FIELD_LIMITS_DOC_PATH}): ✓/✗\n`;
   prompt += `   - Density: X% (2.5-3%) ✓/✗\n\n`;
 
   prompt += `**Reference**: ${FIELD_LIMITS_DOC_PATH}\n`;
@@ -180,7 +183,7 @@ export function generateKeywordLocalizationPrompt(
   prompt += `For EACH target locale in this batch:\n`;
   prompt += `1. Use SAVED keyword research (see per-locale data below). Do NOT invent keywords.\n`;
   prompt += `2. Replace keywords in translated content (preserve structure/tone/context)\n`;
-  prompt += `3. Validate character limits\n`;
+  prompt += `3. Validate character limits + store rules (${FIELD_LIMITS_DOC_PATH}) + keyword duplication\n`;
   prompt += `4. **SAVE the updated JSON to file** using the save-locale-file tool (only if file exists)\n\n`;
 
   prompt += `## Optimized Primary (Reference)\n\n`;
@@ -237,12 +240,13 @@ export function generateKeywordLocalizationPrompt(
   prompt += `   - Example: "Aurora EOS: 오로라 예보" (Korean), "Aurora EOS: オーロラ予報" (Japanese)\n`;
   prompt += `   - The keyword after the colon must start with an uppercase letter\n`;
   prompt += `   - **Do NOT translate/rename the app name**; keep the original English app name across all locales.\n`;
-  prompt += `4. Swap keywords in sentences while keeping:\n`;
+  prompt += `4. Deduplicate keywords: final \`aso.keywords\` must be unique and should not repeat title/subtitle terms verbatim\n`;
+  prompt += `5. Swap keywords in sentences while keeping:\n`;
   prompt += `   - Original sentence structure\n`;
   prompt += `   - Tone and messaging\n`;
   prompt += `   - Context and flow\n`;
   prompt += `   - Character limits\n\n`;
-  prompt += `4. **CRITICAL**: Update ALL \`landing\` sections:\n`;
+  prompt += `6. **CRITICAL**: Update ALL \`landing\` sections:\n`;
   prompt += `   - \`landing.hero.title\` and \`landing.hero.description\`: Include keywords naturally\n`;
   prompt += `   - \`landing.screenshots.images[].title\`: Incorporate keywords in all screenshot titles\n`;
   prompt += `   - \`landing.screenshots.images[].description\`: Include keywords in all screenshot descriptions\n`;
@@ -280,7 +284,7 @@ export function generateKeywordLocalizationPrompt(
   prompt += `   - \`landing.reviews.title\` and \`landing.reviews.description\`\n`;
   prompt += `   - \`landing.cta.headline\` and \`landing.cta.description\`\n`;
   prompt += `3. **CRITICAL**: Ensure ALL landing fields are translated (not English)\n`;
-  prompt += `4. Validate limits\n`;
+  prompt += `4. Validate limits + store rules (${FIELD_LIMITS_DOC_PATH}) + keyword duplication (unique list; avoid repeating title/subtitle terms verbatim)\n`;
   prompt += `5. **SAVE the updated JSON to file** using save-locale-file tool\n`;
   prompt += `6. Move to next locale in batch\n\n`;
 
@@ -314,7 +318,13 @@ export function generateKeywordLocalizationPrompt(
   prompt += `     * cta (headline, icons, rating, description)\n`;
   prompt += `   - **NO English text in landing sections** - everything must be translated\n\n`;
   prompt += `**3. Validation**\n`;
-  prompt += `   - All fields within limits ✓/✗\n\n`;
+  prompt += `   - title: X/30 ✓/✗\n`;
+  prompt += `   - subtitle: X/30 ✓/✗\n`;
+  prompt += `   - shortDescription: X/80 ✓/✗\n`;
+  prompt += `   - keywords: X/100 ✓/✗ (deduped ✓/✗; not repeating title/subtitle)\n`;
+  prompt += `   - intro: X/300 ✓/✗\n`;
+  prompt += `   - outro: X/200 ✓/✗\n`;
+  prompt += `   - Store rules (${FIELD_LIMITS_DOC_PATH}): ✓/✗\n\n`;
   prompt += `**4. File Save Confirmation**\n`;
   prompt += `   - Confirm file saved: public/products/${slug}/locales/[locale-code].json\n`;
   prompt += `   - **Only save if the file already exists** - do not create new files\n\n`;
