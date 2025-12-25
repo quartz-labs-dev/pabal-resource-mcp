@@ -8,6 +8,10 @@ interface GenerateAsoPromptArgs {
   localeSections: string[];
   keywordResearchByLocale: Record<string, string[]>;
   keywordResearchDirByLocale: Record<string, string>;
+  keywordResearchFallbackByLocale: Record<
+    string,
+    { isFallback: boolean; fallbackLocale?: string }
+  >;
 }
 
 export interface GenerateKeywordLocalizationPromptArgs
@@ -200,13 +204,28 @@ export function generateKeywordLocalizationPrompt(
     prompt += `---\n\n`;
   }
 
+  const { keywordResearchFallbackByLocale } = args;
+
   nonPrimaryLocales.forEach((loc) => {
     const researchSections = keywordResearchByLocale[loc] || [];
     const researchDir = keywordResearchDirByLocale[loc];
+    const fallbackInfo = keywordResearchFallbackByLocale?.[loc];
+
     if (researchSections.length > 0) {
-      prompt += `### Locale ${loc}: ✅ Saved research found\n${researchSections.join(
-        "\n"
-      )}\n\n`;
+      if (fallbackInfo?.isFallback && fallbackInfo.fallbackLocale) {
+        // Using fallback (en-US/en) keywords - already loaded with translation notice
+        prompt += `### Locale ${loc}: 🔄 Using ${fallbackInfo.fallbackLocale} keywords as fallback - MUST TRANSLATE TO ${loc.toUpperCase()}\n`;
+        prompt += researchSections.join("\n");
+        prompt += `\n\n**CRITICAL:** The keywords above are in ${fallbackInfo.fallbackLocale}. You MUST:\n`;
+        prompt += `1. **TRANSLATE each keyword into ${loc}** - use natural, native expressions\n`;
+        prompt += `2. Ensure translated keywords are what ${loc} users would actually search for\n`;
+        prompt += `3. **DO NOT use ${fallbackInfo.fallbackLocale} keywords directly** - all keywords must be in ${loc} language\n\n`;
+      } else {
+        // Locale-specific research found
+        prompt += `### Locale ${loc}: ✅ Saved research found (locale-specific)\n${researchSections.join(
+          "\n"
+        )}\n\n`;
+      }
     } else if (hasPrimaryResearch) {
       prompt += `### Locale ${loc}: ⚠️ No saved research - TRANSLATE ENGLISH KEYWORDS TO ${loc.toUpperCase()}\n`;
       prompt += `No keyword research found at ${researchDir}.\n`;

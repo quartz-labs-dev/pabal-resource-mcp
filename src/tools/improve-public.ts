@@ -183,12 +183,21 @@ export async function handleImprovePublic(
   }
 
   // Load keyword research data per locale (from .aso/keywordResearch)
+  // If locale-specific research is not found, fallback to en-US/en and translate
   const keywordResearchByLocale: Record<string, string[]> = {};
   const keywordResearchDirByLocale: Record<string, string> = {};
+  const keywordResearchFallbackByLocale: Record<
+    string,
+    { isFallback: boolean; fallbackLocale?: string }
+  > = {};
   for (const loc of targetLocales) {
     const research = loadKeywordResearchForLocale(slug, loc);
     keywordResearchByLocale[loc] = research.sections;
     keywordResearchDirByLocale[loc] = research.researchDir;
+    keywordResearchFallbackByLocale[loc] = {
+      isFallback: research.isFallback,
+      fallbackLocale: research.fallbackLocale,
+    };
   }
 
   const baseArgs = {
@@ -199,6 +208,7 @@ export async function handleImprovePublic(
     localeSections,
     keywordResearchByLocale,
     keywordResearchDirByLocale,
+    keywordResearchFallbackByLocale,
   };
 
   // Stage 1: Primary optimization
@@ -264,6 +274,8 @@ export async function handleImprovePublic(
         localeSections: baseArgs.localeSections,
         keywordResearchByLocale: baseArgs.keywordResearchByLocale,
         keywordResearchDirByLocale: baseArgs.keywordResearchDirByLocale,
+        keywordResearchFallbackByLocale:
+          baseArgs.keywordResearchFallbackByLocale,
         optimizedPrimary,
         batchLocales,
         batchIndex: currentBatchIndex,

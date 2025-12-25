@@ -320,11 +320,18 @@ function formatMergedData(merged: MergedKeywordData, researchDir: string): strin
   return lines.join("\n");
 }
 
-export function loadKeywordResearchForLocale(slug: string, locale: string): {
+interface LoadKeywordResearchResult {
   entries: KeywordResearchEntry[];
   sections: string[];
   researchDir: string;
-} {
+  isFallback: boolean;
+  fallbackLocale?: string;
+}
+
+function loadKeywordResearchForLocaleInternal(
+  slug: string,
+  locale: string
+): Omit<LoadKeywordResearchResult, "isFallback" | "fallbackLocale"> | null {
   const researchDir = path.join(
     getKeywordResearchDir(),
     "products",
@@ -334,12 +341,16 @@ export function loadKeywordResearchForLocale(slug: string, locale: string): {
   );
 
   if (!fs.existsSync(researchDir)) {
-    return { entries: [], sections: [], researchDir };
+    return null;
   }
 
   const files = fs
     .readdirSync(researchDir)
     .filter((file) => file.endsWith(".json"));
+
+  if (files.length === 0) {
+    return null;
+  }
 
   const entries: KeywordResearchEntry[] = [];
 
@@ -360,20 +371,69 @@ export function loadKeywordResearchForLocale(slug: string, locale: string): {
     }
   }
 
-  // Merge all platform data into a single combined view
+  // Check if we have any valid entries
   const validEntries = entries.filter((e) => !e.data?.parseError);
+  if (validEntries.length === 0) {
+    return null;
+  }
+
+  // Merge all platform data into a single combined view
   if (validEntries.length > 1) {
     // Multiple files (e.g., ios + android) - show merged view
     const merged = mergeKeywordData(validEntries);
     const mergedSection = formatMergedData(merged, researchDir);
     return { entries, sections: [mergedSection], researchDir };
-  } else if (validEntries.length === 1) {
-    // Single file - show detailed view
-    const sections = entries.map(formatEntry);
-    return { entries, sections, researchDir };
   }
 
-  // No valid entries or only errors
+  // Single file - show detailed view
   const sections = entries.map(formatEntry);
   return { entries, sections, researchDir };
+}
+
+const FALLBACK_LOCALES = ["en-US", "en"];
+
+export function loadKeywordResearchForLocale(
+  slug: string,
+  locale: string
+): LoadKeywordResearchResult {
+  const researchDir = path.join(
+    getKeywordResearchDir(),
+    "products",
+    slug,
+    "locales",
+    locale
+  );
+
+  // Try to load the locale's own keyword research
+  const result = loadKeywordResearchForLocaleInternal(slug, locale);
+  if (result) {
+    return { ...result, isFallback: false };
+  }
+
+  // If locale-specific research not found, try fallback locales (en-US, en)
+  for (const fallbackLocale of FALLBACK_LOCALES) {
+    if (fallbackLocale === locale) continue;
+
+    const fallbackResult = loadKeywordResearchForLocaleInternal(
+      slug,
+      fallbackLocale
+    );
+    if (fallbackResult) {
+      // Add fallback notice to sections
+      const fallbackNotice = `⚠️ **FALLBACK: Using ${fallbackLocale} keywords** - No research found for ${locale}. You MUST TRANSLATE these keywords to ${locale}.\n`;
+      const sectionsWithNotice = fallbackResult.sections.map(
+        (section) => fallbackNotice + section
+      );
+      return {
+        entries: fallbackResult.entries,
+        sections: sectionsWithNotice,
+        researchDir: fallbackResult.researchDir,
+        isFallback: true,
+        fallbackLocale,
+      };
+    }
+  }
+
+  // No research found at all
+  return { entries: [], sections: [], researchDir, isFallback: false };
 }
