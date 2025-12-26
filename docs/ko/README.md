@@ -209,14 +209,14 @@ pabal-web-mcp는 `pabal-mcp`의 설정 파일을 사용합니다. 자세한 인�
 
 ### 사용 가능한 툴
 
-| 툴               | 설명                                                  |
-| ---------------- | ----------------------------------------------------- |
-| `aso-to-public`  | ASO 데이터를 public config 형식으로 변환              |
-| `public-to-aso`  | public config를 ASO 데이터 형식으로 변환              |
-| `keyword-research` | ASO 키워드 연구 계획/저장 (.aso/keywordResearch)    |
-| `improve-public` | AI 제안으로 제품 로케일 콘텐츠 개선                   |
-| `init-project`   | 새로운 제품 프로젝트 구조 초기화                       |
-| `create-blog-html` | BLOG_META 헤더가 있는 정적 HTML 블로그 게시물 생성   |
+| 툴                 | 설명                                               |
+| ------------------ | -------------------------------------------------- |
+| `aso-to-public`    | ASO 데이터를 public config 형식으로 변환           |
+| `public-to-aso`    | public config를 ASO 데이터 형식으로 변환           |
+| `keyword-research` | ASO 키워드 연구 계획/저장 (.aso/keywordResearch)   |
+| `improve-public`   | AI 제안으로 제품 로케일 콘텐츠 개선                |
+| `init-project`     | 새로운 제품 프로젝트 구조 초기화                   |
+| `create-blog-html` | BLOG_META 헤더가 있는 정적 HTML 블로그 게시물 생성 |
 
 ### 외부 키워드 MCP 사용 ([appreply-co/mcp-appstore](https://github.com/appreply-co/mcp-appstore))
 
@@ -232,32 +232,18 @@ pabal-web-mcp는 `pabal-mcp`의 설정 파일을 사용합니다. 자세한 인�
 
 각 스토어에서 지원하는 모든 언어를 지원합니다.
 
-| 통합    | App Store | Google Play |
-| ------- | --------- | ----------- |
-| en-US   | en-US     | en-US       |
-| ko-KR   | ko        | ko-KR       |
-| ja-JP   | ja        | ja-JP       |
-| zh-CN   | zh-Hans   | zh-CN       |
-| zh-TW   | zh-Hant   | zh-TW       |
-| de-DE   | de-DE     | de-DE       |
-| fr-FR   | fr-FR     | fr-FR       |
-| es-ES   | es-ES     | es-ES       |
-| pt-BR   | pt-BR     | pt-BR       |
-| ...     | ...       | ...         |
-
-## 카테고리별 툴
-
-| 카테고리 | 툴 수 | 설명 |
-|---------|------|------|
-| [ASO](./aso.md) | 5 | ASO 데이터 변환, 최적화, 검증 |
-| [Apps](./apps.md) | 2 | 프로젝트 초기화, 앱 검색 |
-| [Content](./content.md) | 1 | 블로그 HTML 생성 |
-
-## 바로가기
-
-- [ASO 툴](./aso.md) - Pull, push, improve, validate, keyword research
-- [Apps 툴](./apps.md) - 프로젝트 초기화, 앱 검색
-- [Content 툴](./content.md) - 블로그 HTML 생성
+| 통합  | App Store | Google Play |
+| ----- | --------- | ----------- |
+| en-US | en-US     | en-US       |
+| ko-KR | ko        | ko-KR       |
+| ja-JP | ja        | ja-JP       |
+| zh-CN | zh-Hans   | zh-CN       |
+| zh-TW | zh-Hant   | zh-TW       |
+| de-DE | de-DE     | de-DE       |
+| fr-FR | fr-FR     | fr-FR       |
+| es-ES | es-ES     | es-ES       |
+| pt-BR | pt-BR     | pt-BR       |
+| ...   | ...       | ...         |
 
 ## 라이선스
 
