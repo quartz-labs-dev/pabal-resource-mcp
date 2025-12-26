@@ -1,19 +1,19 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { loadAsoFromConfig } from "../utils/aso-converter.js";
+import { loadAsoFromConfig } from "../../utils/aso-converter.js";
 import {
   loadProductLocales,
   resolvePrimaryLocale,
-} from "./utils/improve-public/load-product-locales.util.js";
-import { getFullDescriptionForLocale } from "./utils/improve-public/get-full-description.util.js";
-import { formatLocaleSection } from "./utils/improve-public/format-locale-section.util.js";
+} from "./utils/improve/load-product-locales.util.js";
+import { getFullDescriptionForLocale } from "./utils/improve/get-full-description.util.js";
+import { formatLocaleSection } from "./utils/improve/format-locale-section.util.js";
 import {
   generatePrimaryOptimizationPrompt,
   generateKeywordLocalizationPrompt,
   type GenerateKeywordLocalizationPromptArgs,
-} from "./utils/improve-public/generate-aso-prompt.util.js";
-import { saveLocaleFile } from "./utils/improve-public/save-locale-file.util.js";
-import { loadKeywordResearchForLocale } from "./utils/improve-public/load-keyword-research.util.js";
+} from "./utils/improve/generate-aso-prompt.util.js";
+import { saveLocaleFile } from "./utils/improve/save-locale-file.util.js";
+import { loadKeywordResearchForLocale } from "./utils/improve/load-keyword-research.util.js";
 
 const FIELD_LIMITS_DOC_PATH = "docs/aso/ASO_FIELD_LIMITS.md";
 

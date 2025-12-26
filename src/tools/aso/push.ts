@@ -1,35 +1,35 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import path from "node:path";
-import { loadAsoFromConfig } from "../utils/aso-converter.js";
+import { loadAsoFromConfig } from "../../utils/aso-converter.js";
 import {
   FIELD_LIMITS_DOC_PATH,
   sanitizeAsoData,
   validateFieldLimits,
   formatValidationIssues,
-} from "../utils/aso-validation.util.js";
-import { prepareAsoDataForPush } from "./utils/public-to-aso/prepare-aso-data-for-push.util.js";
-import { saveRawAsoData } from "./utils/public-to-aso/save-raw-aso-data.util.js";
-import { downloadImage } from "./utils/public-to-aso/download-image.util.js";
-import { isLocalAssetPath } from "./utils/public-to-aso/is-local-asset-path.util.js";
-import { copyLocalAssetToAsoDir } from "./utils/public-to-aso/copy-local-asset-to-aso-dir.util.js";
-import { convertToMultilingual } from "./utils/shared/convert-to-multilingual.util.js";
+} from "../../utils/aso-validation.util.js";
+import { prepareAsoDataForPush } from "./utils/push/prepare-aso-data-for-push.util.js";
+import { saveRawAsoData } from "./utils/push/save-raw-aso-data.util.js";
+import { downloadImage } from "./utils/push/download-image.util.js";
+import { isLocalAssetPath } from "./utils/push/is-local-asset-path.util.js";
+import { copyLocalAssetToAsoDir } from "./utils/push/copy-local-asset-to-aso-dir.util.js";
+import { convertToMultilingual } from "../utils/shared/convert-to-multilingual.util.js";
 import {
   isGooglePlayMultilingual,
   isAppStoreMultilingual,
   isGooglePlayLocale,
   isAppStoreLocale,
-} from "../types/aso/index.js";
-import type { AsoData } from "../types/aso/index.js";
+} from "../../types/aso/index.js";
+import type { AsoData } from "../../types/aso/index.js";
 import {
   DEFAULT_LOCALE,
   type UnifiedLocale,
-} from "../constants/unified-locales.js";
+} from "../../constants/unified-locales.js";
 import {
   unifiedToGooglePlay,
   unifiedToAppStore,
-} from "../utils/locale-converter.js";
-import { getPushDataDir, getProductsDir } from "../utils/config.util.js";
+} from "../../utils/locale-converter.js";
+import { getPushDataDir, getProductsDir } from "../../utils/config.util.js";
 import fs from "node:fs";
 
 const toJsonSchema: (

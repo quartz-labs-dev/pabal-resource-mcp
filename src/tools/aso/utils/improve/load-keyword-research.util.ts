@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { getKeywordResearchDir } from "../../../utils/config.util.js";
+import { getKeywordResearchDir } from "../../../../utils/config.util.js";
 
 export interface KeywordResearchEntry {
   filePath: string;

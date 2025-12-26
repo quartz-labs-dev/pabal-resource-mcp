@@ -17,7 +17,7 @@ Hard limits and gotchas for all text fields we upload to each store. Character c
 - Keywords (`keywords`): ≤100 chars, comma-separated, no duplicates
 - Promotional text (`promotionalText`): ≤170 chars, editable any time
 - Description (`description`): ≤4000 chars
-- What’s New (`whatsNew`): ≤4000 chars
+- What's New (`whatsNew`): ≤4000 chars
 - URLs (`supportUrl`, `marketingUrl`, `privacyPolicyUrl`): valid HTTPS recommended; no strict length limit but overly long or redirect-heavy links can be rejected
 - Avoid: price/ranking claims, competitor comparisons, keyword stuffing, excessive symbols/emojis, misuse of third-party trademarks
 

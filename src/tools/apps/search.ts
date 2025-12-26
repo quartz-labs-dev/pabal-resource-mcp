@@ -12,7 +12,7 @@ import {
   loadRegisteredApps,
   findRegisteredApp,
   type RegisteredApp,
-} from "../utils/registered-apps.util.js";
+} from "../../utils/registered-apps.util.js";
 
 const TOOL_NAME = "search-app";
 

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { ProductLocale } from "../../../types/products/index.js";
-import { getProductsDir } from "../../../utils/config.util.js";
+import type { ProductLocale } from "../../../../types/products/index.js";
+import { getProductsDir } from "../../../../utils/config.util.js";
 
 /**
  * Save locale data to file

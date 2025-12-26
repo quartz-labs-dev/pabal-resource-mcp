@@ -7,46 +7,51 @@
  * - Handler function
  */
 
+// ASO Tools
 import {
   asoToPublicTool,
   asoToPublicInputSchema,
   handleAsoToPublic,
-} from "./aso-to-public.js";
+} from "./aso/pull.js";
 import {
   publicToAsoTool,
   publicToAsoInputSchema,
   handlePublicToAso,
-} from "./public-to-aso.js";
+} from "./aso/push.js";
 import {
   improvePublicTool,
   improvePublicInputSchema,
   handleImprovePublic,
-} from "./improve-public.js";
-import {
-  initProjectTool,
-  initProjectInputSchema,
-  handleInitProject,
-} from "./init-project.js";
-import {
-  createBlogHtmlTool,
-  createBlogHtmlInputSchema,
-  handleCreateBlogHtml,
-} from "./create-blog-html.js";
-import {
-  keywordResearchTool,
-  keywordResearchInputSchema,
-  handleKeywordResearch,
-} from "./keyword-research.js";
-import {
-  searchAppTool,
-  searchAppInputSchema,
-  handleSearchApp,
-} from "./search-app.js";
+} from "./aso/improve.js";
 import {
   validateAsoTool,
   validateAsoInputSchema,
   handleValidateAso,
-} from "./validate-aso.js";
+} from "./aso/validate.js";
+import {
+  keywordResearchTool,
+  keywordResearchInputSchema,
+  handleKeywordResearch,
+} from "./aso/keyword-research.js";
+
+// Apps Tools
+import {
+  initProjectTool,
+  initProjectInputSchema,
+  handleInitProject,
+} from "./apps/init.js";
+import {
+  searchAppTool,
+  searchAppInputSchema,
+  handleSearchApp,
+} from "./apps/search.js";
+
+// Content Tools
+import {
+  createBlogHtmlTool,
+  createBlogHtmlInputSchema,
+  handleCreateBlogHtml,
+} from "./content/create-blog-html.js";
 import type { z } from "zod";
 
 export interface ToolInfo {
@@ -62,13 +67,14 @@ export interface ToolInfo {
  * All registered tools
  */
 export const tools: ToolInfo[] = [
+  // ASO Tools
   {
     name: asoToPublicTool.name,
     description: asoToPublicTool.description,
     inputSchema: asoToPublicTool.inputSchema,
     zodSchema: asoToPublicInputSchema,
     handler: handleAsoToPublic,
-    category: "ASO Data Conversion",
+    category: "aso",
   },
   {
     name: publicToAsoTool.name,
@@ -76,7 +82,7 @@ export const tools: ToolInfo[] = [
     inputSchema: publicToAsoTool.inputSchema,
     zodSchema: publicToAsoInputSchema,
     handler: handlePublicToAso,
-    category: "ASO Data Conversion",
+    category: "aso",
   },
   {
     name: improvePublicTool.name,
@@ -84,39 +90,7 @@ export const tools: ToolInfo[] = [
     inputSchema: improvePublicTool.inputSchema,
     zodSchema: improvePublicInputSchema,
     handler: handleImprovePublic,
-    category: "ASO Optimization",
-  },
-  {
-    name: initProjectTool.name,
-    description: initProjectTool.description,
-    inputSchema: initProjectTool.inputSchema,
-    zodSchema: initProjectInputSchema,
-    handler: handleInitProject,
-    category: "Setup",
-  },
-  {
-    name: createBlogHtmlTool.name,
-    description: createBlogHtmlTool.description,
-    inputSchema: createBlogHtmlTool.inputSchema,
-    zodSchema: createBlogHtmlInputSchema,
-    handler: handleCreateBlogHtml,
-    category: "Content",
-  },
-  {
-    name: keywordResearchTool.name,
-    description: keywordResearchTool.description,
-    inputSchema: keywordResearchTool.inputSchema,
-    zodSchema: keywordResearchInputSchema,
-    handler: handleKeywordResearch,
-    category: "ASO Research",
-  },
-  {
-    name: searchAppTool.name,
-    description: searchAppTool.description,
-    inputSchema: searchAppTool.inputSchema,
-    zodSchema: searchAppInputSchema,
-    handler: handleSearchApp,
-    category: "App Management",
+    category: "aso",
   },
   {
     name: validateAsoTool.name,
@@ -124,7 +98,41 @@ export const tools: ToolInfo[] = [
     inputSchema: validateAsoTool.inputSchema,
     zodSchema: validateAsoInputSchema,
     handler: handleValidateAso,
-    category: "ASO Validation",
+    category: "aso",
+  },
+  {
+    name: keywordResearchTool.name,
+    description: keywordResearchTool.description,
+    inputSchema: keywordResearchTool.inputSchema,
+    zodSchema: keywordResearchInputSchema,
+    handler: handleKeywordResearch,
+    category: "aso",
+  },
+  // Apps Tools
+  {
+    name: initProjectTool.name,
+    description: initProjectTool.description,
+    inputSchema: initProjectTool.inputSchema,
+    zodSchema: initProjectInputSchema,
+    handler: handleInitProject,
+    category: "apps",
+  },
+  {
+    name: searchAppTool.name,
+    description: searchAppTool.description,
+    inputSchema: searchAppTool.inputSchema,
+    zodSchema: searchAppInputSchema,
+    handler: handleSearchApp,
+    category: "apps",
+  },
+  // Content Tools
+  {
+    name: createBlogHtmlTool.name,
+    description: createBlogHtmlTool.description,
+    inputSchema: createBlogHtmlTool.inputSchema,
+    zodSchema: createBlogHtmlInputSchema,
+    handler: handleCreateBlogHtml,
+    category: "content",
   },
 ];
 

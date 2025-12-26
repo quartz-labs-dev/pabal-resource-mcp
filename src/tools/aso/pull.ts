@@ -1,19 +1,19 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import type { AsoData } from "../types/aso/index.js";
+import type { AsoData } from "../../types/aso/index.js";
 import {
   isGooglePlayMultilingual,
   isAppStoreMultilingual,
-} from "../types/aso/index.js";
+} from "../../types/aso/index.js";
 import {
   DEFAULT_LOCALE,
   googlePlayToUnified,
   appStoreToUnified,
   type UnifiedLocale,
-} from "../constants/unified-locales.js";
-import { loadPullData } from "./utils/aso-to-public/load-pull-data.util.js";
-import { generateConversionPrompt } from "./utils/aso-to-public/generate-conversion-prompt.util.js";
-import { getPullDataDir } from "../utils/config.util.js";
+} from "../../constants/unified-locales.js";
+import { loadPullData } from "./utils/pull/load-pull-data.util.js";
+import { generateConversionPrompt } from "./utils/pull/generate-conversion-prompt.util.js";
+import { getPullDataDir } from "../../utils/config.util.js";
 
 const toJsonSchema: (
   schema: z.ZodTypeAny,

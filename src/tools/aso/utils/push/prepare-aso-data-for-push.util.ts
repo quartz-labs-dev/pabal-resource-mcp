@@ -1,13 +1,13 @@
-import type { AsoData, GooglePlayAsoData, AppStoreAsoData } from "../../../types/aso/index.js";
-import { isGooglePlayMultilingual, isAppStoreMultilingual } from "../../../types/aso/index.js";
+import type { AsoData, GooglePlayAsoData, AppStoreAsoData } from "../../../../types/aso/index.js";
+import { isGooglePlayMultilingual, isAppStoreMultilingual } from "../../../../types/aso/index.js";
 import {
   DEFAULT_LOCALE,
   type UnifiedLocale,
-} from "../../../constants/unified-locales.js";
+} from "../../../../constants/unified-locales.js";
 import {
   unifiedToGooglePlay,
   unifiedToAppStore,
-} from "../../../utils/locale-converter.js";
+} from "../../../../utils/locale-converter.js";
 
 /**
  * Prepare ASO data for pushing to stores

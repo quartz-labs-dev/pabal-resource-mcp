@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { getPullDataDir, getProductsDir } from "../utils/config.util.js";
+import { getPullDataDir, getProductsDir } from "../../utils/config.util.js";
 
 const listSlugDirs = (dir: string): string[] => {
   if (!fs.existsSync(dir)) return [];

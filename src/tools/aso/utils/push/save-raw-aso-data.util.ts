@@ -1,11 +1,11 @@
-import type { AsoData } from "../../../types/aso/index.js";
+import type { AsoData } from "../../../../types/aso/index.js";
 import {
   isGooglePlayMultilingual,
   isAppStoreMultilingual,
-} from "../../../types/aso/index.js";
-import { DEFAULT_LOCALE } from "../../../constants/unified-locales.js";
-import { saveAsoToAsoDir } from "../../../utils/aso-converter.js";
-import { getPushDataDir } from "../../../utils/config.util.js";
+} from "../../../../types/aso/index.js";
+import { DEFAULT_LOCALE } from "../../../../constants/unified-locales.js";
+import { saveAsoToAsoDir } from "../../../../utils/aso-converter.js";
+import { getPushDataDir } from "../../../../utils/config.util.js";
 
 /**
  * Save raw ASO data to ASO directory

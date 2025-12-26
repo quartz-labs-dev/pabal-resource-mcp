@@ -1,4 +1,4 @@
-import type { ProductLocale, AsoTemplate } from "../../../types/products/index.js";
+import type { ProductLocale, AsoTemplate } from "../../../../types/products/index.js";
 import {
   extractKeywordsFromContent,
   analyzeKeywords,

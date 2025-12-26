@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { ProductConfig, ProductLocale } from "../../../types/products/index.js";
-import { DEFAULT_LOCALE } from "../../../constants/unified-locales.js";
-import { getProductsDir } from "../../../utils/config.util.js";
+import type { ProductConfig, ProductLocale } from "../../../../types/products/index.js";
+import { DEFAULT_LOCALE } from "../../../../constants/unified-locales.js";
+import { getProductsDir } from "../../../../utils/config.util.js";
 
 /**
  * Load product config and locales from public/products/[slug]/

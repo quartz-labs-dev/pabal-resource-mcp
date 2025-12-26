@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { AsoData } from "../../../types/aso/index.js";
-import { getPullDataDir } from "../../../utils/config.util.js";
+import type { AsoData } from "../../../../types/aso/index.js";
+import { getPullDataDir } from "../../../../utils/config.util.js";
 
 /**
  * Load ASO data from pullData directory

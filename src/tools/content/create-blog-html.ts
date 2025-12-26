@@ -9,13 +9,13 @@ import {
   getBlogOutputPaths,
   resolveTargetLocales,
   slugifyTitle,
-} from "../utils/blog.util.js";
-import { getPublicDir } from "../utils/config.util.js";
-import { DEFAULT_APP_SLUG } from "../constants/blog.constants.js";
+} from "../../utils/blog.util.js";
+import { getPublicDir } from "../../utils/config.util.js";
+import { DEFAULT_APP_SLUG } from "../../constants/blog.constants.js";
 import type {
   BlogMetaOutput,
   CreateBlogHtmlResult,
-} from "../types/tools/create-blog.types.js";
+} from "../../types/tools/create-blog.types.js";
 
 const toJsonSchema: (
   schema: z.ZodTypeAny,

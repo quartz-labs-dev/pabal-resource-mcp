@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { loadAsoFromConfig } from "../utils/aso-converter.js";
+import { loadAsoFromConfig } from "../../utils/aso-converter.js";
 import {
   FIELD_LIMITS_DOC_PATH,
   APP_STORE_LIMITS,
@@ -9,12 +9,12 @@ import {
   validateFieldLimits,
   validateKeywords,
   formatValidationIssues,
-} from "../utils/aso-validation.util.js";
+} from "../../utils/aso-validation.util.js";
 import {
   isGooglePlayMultilingual,
   isAppStoreMultilingual,
-} from "../types/aso/index.js";
-import { DEFAULT_LOCALE } from "../constants/unified-locales.js";
+} from "../../types/aso/index.js";
+import { DEFAULT_LOCALE } from "../../constants/unified-locales.js";
 
 const toJsonSchema: (
   schema: z.ZodTypeAny,
@@ -303,3 +303,4 @@ export async function handleValidateAso(
     ],
   };
 }
+

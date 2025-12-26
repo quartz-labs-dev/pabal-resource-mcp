@@ -2,14 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { getKeywordResearchDir } from "../utils/config.util.js";
+import { getKeywordResearchDir } from "../../utils/config.util.js";
 import {
   loadProductLocales,
   resolvePrimaryLocale,
-} from "./utils/improve-public/load-product-locales.util.js";
-import { getSupportedLocalesForSlug } from "../utils/registered-apps.util.js";
-import { handleSearchApp } from "./search-app.js";
-import type { RegisteredApp } from "../utils/registered-apps.util.js";
+} from "./utils/improve/load-product-locales.util.js";
+import { getSupportedLocalesForSlug } from "../../utils/registered-apps.util.js";
+import { handleSearchApp } from "../apps/search.js";
+import type { RegisteredApp } from "../../utils/registered-apps.util.js";
 
 const TOOL_NAME = "keyword-research";
 

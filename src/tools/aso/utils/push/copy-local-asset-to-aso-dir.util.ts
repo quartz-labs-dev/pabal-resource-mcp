@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { getPublicDir } from "../../../utils/config.util.js";
+import { getPublicDir } from "../../../../utils/config.util.js";
 
 /**
  * Copy /products assets from public/ into pushData

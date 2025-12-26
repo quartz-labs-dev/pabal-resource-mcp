@@ -1,4 +1,4 @@
-import type { ProductLocale } from "../../../types/products/index.js";
+import type { ProductLocale } from "../../../../types/products/index.js";
 
 /**
  * Generate conversion prompt for Claude

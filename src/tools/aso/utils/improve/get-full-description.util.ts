@@ -1,8 +1,8 @@
-import type { AsoData } from "../../../types/aso/index.js";
+import type { AsoData } from "../../../../types/aso/index.js";
 import {
   isGooglePlayMultilingual,
   isAppStoreMultilingual,
-} from "../../../types/aso/index.js";
+} from "../../../../types/aso/index.js";
 
 /**
  * Get full description for a specific locale from ASO data
