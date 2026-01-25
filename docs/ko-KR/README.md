@@ -1,4 +1,4 @@
-# pabal-web-mcp 문서
+# pabal-resource-mcp 문서
 
 ASO(App Store Optimization)와 웹 SEO 데이터 간 양방향 변환을 위한 MCP (Model Context Protocol) 서버.
 
@@ -11,18 +11,18 @@ ASO(App Store Optimization)와 웹 SEO 데이터 간 양방향 변환을 위한 
 ### 요구사항
 
 - Node.js >= 18
-- [pabal-mcp](https://github.com/quartz-labs-dev/pabal-mcp) 설치 및 설정 필요
+- [pabal-store-api-mcp](https://github.com/quartz-labs-dev/pabal-store-api-mcp) 설치 및 설정 필요
 
 ### 라이브러리로 설치
 
 웹사이트 프로젝트에 이 라이브러리를 설치하세요:
 
 ```bash
-npm install pabal-web-mcp
+npm install pabal-resource-mcp
 # 또는
-yarn add pabal-web-mcp
+yarn add pabal-resource-mcp
 # 또는
-pnpm add pabal-web-mcp
+pnpm add pabal-resource-mcp
 ```
 
 ### MCP 클라이언트 설정
@@ -36,16 +36,16 @@ pnpm add pabal-web-mcp
 ```json
 {
   "mcpServers": {
-    "pabal-web-mcp": {
+    "pabal-resource-mcp": {
       "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
+      "args": ["-y", "pabal-resource-mcp"]
     },
     "mcp-appstore": {
       "command": "node",
       "args": [
-        "/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"
+        "/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"
       ],
-      "cwd": "/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "cwd": "/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -56,15 +56,15 @@ pnpm add pabal-web-mcp
 ```json
 {
   "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "pabal-web-mcp"
+    "pabal-resource-mcp": {
+      "command": "pabal-resource-mcp"
     },
     "mcp-appstore": {
       "command": "node",
       "args": [
-        "/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"
+        "/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"
       ],
-      "cwd": "/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "cwd": "/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -77,16 +77,16 @@ pnpm add pabal-web-mcp
 ```json
 "mcp": {
   "servers": {
-    "pabal-web-mcp": {
+    "pabal-resource-mcp": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
+      "args": ["-y", "pabal-resource-mcp"]
     },
     "mcp-appstore": {
       "type": "stdio",
       "command": "node",
-      "args": ["/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"],
-      "cwd": "/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "args": ["/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"],
+      "cwd": "/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -97,15 +97,15 @@ pnpm add pabal-web-mcp
 ```json
 "mcp": {
   "servers": {
-    "pabal-web-mcp": {
+    "pabal-resource-mcp": {
       "type": "stdio",
-      "command": "pabal-web-mcp"
+      "command": "pabal-resource-mcp"
     },
     "mcp-appstore": {
       "type": "stdio",
       "command": "node",
-      "args": ["/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"],
-      "cwd": "/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "args": ["/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"],
+      "cwd": "/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -121,16 +121,16 @@ Claude Code MCP 설정에 추가 (JSON 형식):
 ```json
 {
   "mcpServers": {
-    "pabal-web-mcp": {
+    "pabal-resource-mcp": {
       "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
+      "args": ["-y", "pabal-resource-mcp"]
     },
     "mcp-appstore": {
       "command": "node",
       "args": [
-        "/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"
+        "/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"
       ],
-      "cwd": "/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "cwd": "/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -141,15 +141,15 @@ Claude Code MCP 설정에 추가 (JSON 형식):
 ```json
 {
   "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "pabal-web-mcp"
+    "pabal-resource-mcp": {
+      "command": "pabal-resource-mcp"
     },
     "mcp-appstore": {
       "command": "node",
       "args": [
-        "/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"
+        "/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"
       ],
-      "cwd": "/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "cwd": "/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -160,16 +160,16 @@ Claude Code MCP 설정에 추가 (JSON 형식):
 ```json
 {
   "mcpServers": {
-    "pabal-web-mcp": {
+    "pabal-resource-mcp": {
       "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
+      "args": ["-y", "pabal-resource-mcp"]
     },
     "mcp-appstore": {
       "command": "node",
       "args": [
-        "/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"
+        "/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"
       ],
-      "cwd": "/절대경로/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "cwd": "/절대경로/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -177,7 +177,7 @@ Claude Code MCP 설정에 추가 (JSON 형식):
 
 ## 🔐 인증 정보 설정
 
-pabal-web-mcp는 `pabal-mcp`의 설정 파일을 사용합니다. 자세한 인증 설정 방법(App Store Connect API 키, Google Play 서비스 계정 등)은 [pabal-mcp README](https://github.com/quartz-labs-dev/pabal-mcp?tab=readme-ov-file#-configure-credentials)를 참조하세요.
+pabal-resource-mcp는 `pabal-store-api-mcp`의 설정 파일을 사용합니다. 자세한 인증 설정 방법(App Store Connect API 키, Google Play 서비스 계정 등)은 [pabal-store-api-mcp README](https://github.com/quartz-labs-dev/pabal-store-api-mcp?tab=readme-ov-file#-configure-credentials)를 참조하세요.
 
 ### ⚠️ 중요: dataDir 경로 설정
 

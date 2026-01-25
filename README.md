@@ -1,4 +1,4 @@
-# pabal-web-mcp
+# pabal-resource-mcp
 
 MCP server for ASO ↔ Web SEO data conversion.
 
@@ -6,24 +6,24 @@ Build synced websites from App Store Connect and Google Play Console data.
 
 > 💡 **Example**: [labs.quartz.best](https://labs.quartz.best/)
 
-[![Documentation](https://img.shields.io/badge/docs-English-blue)](https://pabal.quartz.best/docs/en-US/pabal-mcp/README) [![한국어](https://img.shields.io/badge/docs-한국어-green)](https://pabal.quartz.best/docs/ko-KR/pabal-mcp/README)
+[![Documentation](https://img.shields.io/badge/docs-English-blue)](https://pabal.quartz.best/docs/en-US/pabal-store-api-mcp/README) [![한국어](https://img.shields.io/badge/docs-한국어-green)](https://pabal.quartz.best/docs/ko-KR/pabal-store-api-mcp/README)
 
 ## Installation
 
 ```bash
-npm install pabal-web-mcp
+npm install pabal-resource-mcp
 ```
 
-**Requirements:** Node.js >= 18, [pabal-mcp](https://github.com/quartz-labs-dev/pabal-mcp)
+**Requirements:** Node.js >= 18, [pabal-store-api-mcp](https://github.com/quartz-labs-dev/pabal-store-api-mcp)
 
 ## MCP Configuration
 
 ```json
 {
   "mcpServers": {
-    "pabal-web-mcp": {
+    "pabal-resource-mcp": {
       "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
+      "args": ["-y", "pabal-resource-mcp"]
     }
   }
 }

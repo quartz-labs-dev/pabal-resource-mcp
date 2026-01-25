@@ -13,7 +13,7 @@ import {
 } from "../tools/index.js";
 
 /**
- * pabal-web-mcp Server
+ * pabal-resource-mcp Server
  *
  * MCP server for ASO data management
  * Tools: aso-to-public, public-to-aso, improve-public, init-project, create-blog-html
@@ -21,7 +21,7 @@ import {
 
 const server = new Server(
   {
-    name: "pabal-web-mcp",
+    name: "pabal-resource-mcp",
     version: "0.1.0",
   },
   {
@@ -58,7 +58,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("pabal-web-mcp server running on stdio");
+  console.error("pabal-resource-mcp server running on stdio");
 }
 
 main().catch((error) => {

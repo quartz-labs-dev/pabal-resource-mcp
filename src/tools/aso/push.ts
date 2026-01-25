@@ -422,7 +422,7 @@ export async function handlePublicToAso(
   if (localeCounts.appStore) {
     responseText += `App Store: ${localeCounts.appStore} locale(s)\n`;
   }
-  responseText += `\nNext step: Push to stores using pabal-mcp's aso-push tool`;
+  responseText += `\nNext step: Push to stores using pabal-store-api-mcp's aso-push tool`;
   responseText += `\nReference: ${FIELD_LIMITS_DOC_PATH}`;
   if (sanitizeWarnings.length > 0) {
     responseText += `\nSanitized invalid characters:\n- ${sanitizeWarnings.join(

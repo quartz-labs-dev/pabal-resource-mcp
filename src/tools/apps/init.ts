@@ -15,7 +15,7 @@ const listSlugDirs = (dir: string): string[] => {
 /**
  * init-project MCP Tool
  *
- * Guides the initial setup: run pabal-mcp Init, then convert ASO pullData into public/products/[slug]/.
+ * Guides the initial setup: run pabal-store-api-mcp Init, then convert ASO pullData into public/products/[slug]/.
  * This is a read-only checklist generator; it does not modify files.
  */
 
@@ -40,13 +40,13 @@ const inputSchema = jsonSchema.definitions?.InitProjectInput || jsonSchema;
 
 export const initProjectTool = {
   name: "init-project",
-  description: `Guides the initialization flow: run pabal-mcp Init, then convert ASO pullData into public/products/[slug]/.
+  description: `Guides the initialization flow: run pabal-store-api-mcp Init, then convert ASO pullData into public/products/[slug]/.
 
-This tool is read-only and returns a checklist. It does not call pabal-mcp directly or write files.
+This tool is read-only and returns a checklist. It does not call pabal-store-api-mcp directly or write files.
 
 Steps:
-1) Ensure pabal-mcp 'init' ran and .aso/pullData/products/[slug]/ exists (path from ~/.config/pabal-mcp/config.json dataDir)
-2) Convert pulled ASO data -> public/products/[slug]/ using pabal-web-mcp tools (aso-to-public, public-to-aso dry run)
+1) Ensure pabal-store-api-mcp 'init' ran and .aso/pullData/products/[slug]/ exists (path from ~/.config/pabal-mcp/config.json dataDir)
+2) Convert pulled ASO data -> public/products/[slug]/ using pabal-resource-mcp tools (aso-to-public, public-to-aso dry run)
 3) Validate outputs and next actions`,
   inputSchema,
 };
@@ -64,12 +64,12 @@ export async function handleInitProject(
     input.slug?.length && input.slug.trim().length > 0
       ? [input.slug.trim()]
       : pullDataSlugs.length > 0
-      ? pullDataSlugs
-      : publicSlugs;
+        ? pullDataSlugs
+        : publicSlugs;
 
   const lines: string[] = [];
 
-  lines.push("Init workflow (pabal-mcp -> pabal-web-mcp)");
+  lines.push("Init workflow (pabal-store-api-mcp -> pabal-resource-mcp)");
   lines.push(
     `Target slugs: ${
       targetSlugs.length > 0 ? targetSlugs.join(", ") : "(none detected)"
@@ -89,7 +89,7 @@ export async function handleInitProject(
 
   if (targetSlugs.length === 0) {
     lines.push(
-      "No products detected. Run pabal-mcp 'init' for your slug(s) to populate .aso/pullData/products/, then rerun this tool."
+      "No products detected. Run pabal-store-api-mcp 'init' for your slug(s) to populate .aso/pullData/products/, then rerun this tool."
     );
     return {
       content: [
@@ -101,18 +101,18 @@ export async function handleInitProject(
     };
   }
 
-  lines.push("Step 1: Fetch raw ASO data (pabal-mcp 'init')");
+  lines.push("Step 1: Fetch raw ASO data (pabal-store-api-mcp 'init')");
   for (const slug of targetSlugs) {
     const hasPull = pullDataSlugs.includes(slug);
     lines.push(`- ${slug}: ${hasPull ? "pullData ready" : "pullData missing"}`);
   }
   lines.push(
-    "Action: In pabal-mcp, run the 'init' tool for each slug above that is missing pullData."
+    "Action: In pabal-store-api-mcp, run the 'init' tool for each slug above that is missing pullData."
   );
   lines.push("");
 
   lines.push(
-    "Step 2: Convert pullData to web assets (pabal-web-mcp 'aso-to-public')"
+    "Step 2: Convert pullData to web assets (pabal-resource-mcp 'aso-to-public')"
   );
   for (const slug of targetSlugs) {
     const hasPull = pullDataSlugs.includes(slug);
@@ -128,19 +128,19 @@ export async function handleInitProject(
     );
   }
   lines.push(
-    "Action: After pullData exists, run pabal-web-mcp 'aso-to-public' per slug to generate locale prompts. Save results to public/products/[slug]/locales/, copy screenshots, and ensure config.json/icon/og-image are in place."
+    "Action: After pullData exists, run pabal-resource-mcp 'aso-to-public' per slug to generate locale prompts. Save results to public/products/[slug]/locales/, copy screenshots, and ensure config.json/icon/og-image are in place."
   );
   lines.push("");
 
   lines.push("Step 3: Verify and prepare for push (optional)");
   lines.push(
-    "Use pabal-web-mcp 'public-to-aso' with dryRun=true to validate structure and build pushData before uploading via store tooling."
+    "Use pabal-resource-mcp 'public-to-aso' with dryRun=true to validate structure and build pushData before uploading via store tooling."
   );
   lines.push("");
 
   lines.push("Notes:");
   lines.push(
-    "- This tool is read-only; it does not write files or call pabal-mcp."
+    "- This tool is read-only; it does not write files or call pabal-store-api-mcp."
   );
   lines.push(
     "- Extend this init checklist as new processes are added (e.g., asset generation or validations)."

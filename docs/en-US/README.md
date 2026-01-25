@@ -1,4 +1,4 @@
-# pabal-web-mcp Documentation
+# pabal-resource-mcp Documentation
 
 MCP (Model Context Protocol) server for bidirectional conversion between ASO (App Store Optimization) and web SEO data.
 
@@ -11,18 +11,18 @@ This library enables seamless reuse of ASO data for web SEO purposes, allowing y
 ### Requirements
 
 - Node.js >= 18
-- [pabal-mcp](https://github.com/quartz-labs-dev/pabal-mcp) must be installed and configured
+- [pabal-store-api-mcp](https://github.com/quartz-labs-dev/pabal-store-api-mcp) must be installed and configured
 
 ### Install as Library
 
 Install this library in your website project:
 
 ```bash
-npm install pabal-web-mcp
+npm install pabal-resource-mcp
 # or
-yarn add pabal-web-mcp
+yarn add pabal-resource-mcp
 # or
-pnpm add pabal-web-mcp
+pnpm add pabal-resource-mcp
 ```
 
 ### MCP Client Configuration
@@ -36,16 +36,16 @@ Add to `~/.cursor/mcp.json` (global) or project `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "pabal-web-mcp": {
+    "pabal-resource-mcp": {
       "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
+      "args": ["-y", "pabal-resource-mcp"]
     },
     "mcp-appstore": {
       "command": "node",
       "args": [
-        "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"
+        "/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"
       ],
-      "cwd": "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "cwd": "/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -56,15 +56,15 @@ Or if installed globally:
 ```json
 {
   "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "pabal-web-mcp"
+    "pabal-resource-mcp": {
+      "command": "pabal-resource-mcp"
     },
     "mcp-appstore": {
       "command": "node",
       "args": [
-        "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"
+        "/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"
       ],
-      "cwd": "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "cwd": "/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -77,16 +77,16 @@ Example `settings.json` MCP section:
 ```json
 "mcp": {
   "servers": {
-    "pabal-web-mcp": {
+    "pabal-resource-mcp": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
+      "args": ["-y", "pabal-resource-mcp"]
     },
     "mcp-appstore": {
       "type": "stdio",
       "command": "node",
-      "args": ["/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"],
-      "cwd": "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "args": ["/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"],
+      "cwd": "/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -97,15 +97,15 @@ Or if installed globally:
 ```json
 "mcp": {
   "servers": {
-    "pabal-web-mcp": {
+    "pabal-resource-mcp": {
       "type": "stdio",
-      "command": "pabal-web-mcp"
+      "command": "pabal-resource-mcp"
     },
     "mcp-appstore": {
       "type": "stdio",
       "command": "node",
-      "args": ["/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"],
-      "cwd": "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "args": ["/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"],
+      "cwd": "/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -121,16 +121,16 @@ Add to Claude Code MCP settings (JSON format):
 ```json
 {
   "mcpServers": {
-    "pabal-web-mcp": {
+    "pabal-resource-mcp": {
       "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
+      "args": ["-y", "pabal-resource-mcp"]
     },
     "mcp-appstore": {
       "command": "node",
       "args": [
-        "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"
+        "/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"
       ],
-      "cwd": "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "cwd": "/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -141,15 +141,15 @@ Or if installed globally:
 ```json
 {
   "mcpServers": {
-    "pabal-web-mcp": {
-      "command": "pabal-web-mcp"
+    "pabal-resource-mcp": {
+      "command": "pabal-resource-mcp"
     },
     "mcp-appstore": {
       "command": "node",
       "args": [
-        "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"
+        "/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"
       ],
-      "cwd": "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "cwd": "/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -160,16 +160,16 @@ Or if installed globally:
 ```json
 {
   "mcpServers": {
-    "pabal-web-mcp": {
+    "pabal-resource-mcp": {
       "command": "npx",
-      "args": ["-y", "pabal-web-mcp"]
+      "args": ["-y", "pabal-resource-mcp"]
     },
     "mcp-appstore": {
       "command": "node",
       "args": [
-        "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore/server.js"
+        "/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore/server.js"
       ],
-      "cwd": "/ABSOLUTE/PATH/TO/pabal-web-mcp/external-tools/mcp-appstore"
+      "cwd": "/ABSOLUTE/PATH/TO/pabal-resource-mcp/external-tools/mcp-appstore"
     }
   }
 }
@@ -177,7 +177,7 @@ Or if installed globally:
 
 ## 🔐 Configure Credentials
 
-pabal-web-mcp uses the configuration file from `pabal-mcp`. For detailed credential setup instructions (App Store Connect API keys, Google Play service accounts, etc.), please refer to the [pabal-mcp README](https://github.com/quartz-labs-dev/pabal-mcp?tab=readme-ov-file#-configure-credentials).
+pabal-resource-mcp uses the configuration file from `pabal-store-api-mcp`. For detailed credential setup instructions (App Store Connect API keys, Google Play service accounts, etc.), please refer to the [pabal-store-api-mcp README](https://github.com/quartz-labs-dev/pabal-store-api-mcp?tab=readme-ov-file#-configure-credentials).
 
 ### ⚠️ Important: Set dataDir Path
 

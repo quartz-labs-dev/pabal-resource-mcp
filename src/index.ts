@@ -1,5 +1,5 @@
 /**
- * pabal-web-mcp
+ * pabal-resource-mcp
  *
  * ASO data types, utilities, and MCP tools for pabal-web
  */
