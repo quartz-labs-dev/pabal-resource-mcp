@@ -203,20 +203,38 @@ pabal-resource-mcp는 `pabal-store-api-mcp`의 설정 파일을 사용합니다.
 - Linux: `"/home/username/projects/pabal-web"`
 - Windows: `"C:\\Users\\username\\projects\\pabal-web"`
 
+### Gemini API 키 (localize-screenshots용)
+
+`localize-screenshots` 툴은 스크린샷 내 텍스트 번역을 위해 Gemini API 키가 필요합니다.
+
+1. [Google AI Studio](https://aistudio.google.com/apikey)에서 API 키 발급
+2. [Google Cloud Console](https://console.cloud.google.com/billing)에서 결제 계정 연결
+3. `~/.config/pabal-mcp/config.json`에 추가:
+
+```json
+{
+  "dataDir": "/path/to/your/project",
+  "gemini": {
+    "apiKey": "your-gemini-api-key"
+  }
+}
+```
+
 ## MCP 서버
 
 이 패키지는 Claude 또는 기타 MCP 호환 클라이언트를 통해 ASO 데이터를 관리하는 MCP 서버를 포함합니다.
 
 ### 사용 가능한 툴
 
-| 툴                 | 설명                                               |
-| ------------------ | -------------------------------------------------- |
-| `aso-to-public`    | ASO 데이터를 public config 형식으로 변환           |
-| `public-to-aso`    | public config를 ASO 데이터 형식으로 변환           |
-| `keyword-research` | ASO 키워드 연구 계획/저장 (.aso/keywordResearch)   |
-| `improve-public`   | AI 제안으로 제품 로케일 콘텐츠 개선                |
-| `init-project`     | 새로운 제품 프로젝트 구조 초기화                   |
-| `create-blog-html` | BLOG_META 헤더가 있는 정적 HTML 블로그 게시물 생성 |
+| 툴                      | 설명                                               |
+| ----------------------- | -------------------------------------------------- |
+| `aso-to-public`         | ASO 데이터를 public config 형식으로 변환           |
+| `public-to-aso`         | public config를 ASO 데이터 형식으로 변환           |
+| `keyword-research`      | ASO 키워드 연구 계획/저장 (.aso/keywordResearch)   |
+| `improve-public`        | AI 제안으로 제품 로케일 콘텐츠 개선                |
+| `localize-screenshots`  | Gemini API를 사용하여 스크린샷 번역                |
+| `init-project`          | 새로운 제품 프로젝트 구조 초기화                   |
+| `create-blog-html`      | BLOG_META 헤더가 있는 정적 HTML 블로그 게시물 생성 |
 
 ### 외부 키워드 MCP 사용 ([appreply-co/mcp-appstore](https://github.com/appreply-co/mcp-appstore))
 

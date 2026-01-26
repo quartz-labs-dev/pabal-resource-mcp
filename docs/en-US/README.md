@@ -203,20 +203,38 @@ Examples:
 - Linux: `"/home/username/projects/pabal-web"`
 - Windows: `"C:\\Users\\username\\projects\\pabal-web"`
 
+### Gemini API Key (for localize-screenshots)
+
+The `localize-screenshots` tool requires a Gemini API key to translate text in screenshots.
+
+1. Get your API key from [Google AI Studio](https://aistudio.google.com/apikey)
+2. Link a billing account at [Google Cloud Console](https://console.cloud.google.com/billing)
+3. Add to `~/.config/pabal-mcp/config.json`:
+
+```json
+{
+  "dataDir": "/path/to/your/project",
+  "gemini": {
+    "apiKey": "your-gemini-api-key"
+  }
+}
+```
+
 ## MCP Server
 
 This package includes an MCP server for managing ASO data through Claude or other MCP-compatible clients.
 
 ### Available Tools
 
-| Tool               | Description                                              |
-| ------------------ | -------------------------------------------------------- |
-| `aso-to-public`    | Convert ASO data to public config format                 |
-| `public-to-aso`    | Convert public config to ASO data format                 |
-| `keyword-research` | Plan/persist ASO keyword research (.aso/keywordResearch) |
-| `improve-public`   | Improve product locale content with AI suggestions       |
-| `init-project`     | Initialize a new product project structure               |
-| `create-blog-html` | Generate static HTML blog posts with BLOG_META headers   |
+| Tool                    | Description                                              |
+| ----------------------- | -------------------------------------------------------- |
+| `aso-to-public`         | Convert ASO data to public config format                 |
+| `public-to-aso`         | Convert public config to ASO data format                 |
+| `keyword-research`      | Plan/persist ASO keyword research (.aso/keywordResearch) |
+| `improve-public`        | Improve product locale content with AI suggestions       |
+| `localize-screenshots`  | Translate app screenshots using Gemini API               |
+| `init-project`          | Initialize a new product project structure               |
+| `create-blog-html`      | Generate static HTML blog posts with BLOG_META headers   |
 
 ### Using external keyword MCP ([appreply-co/mcp-appstore](https://github.com/appreply-co/mcp-appstore))
 

@@ -79,6 +79,75 @@ ASO 최적화를 위한 키워드 리서치 데이터 관리.
 
 ---
 
+### localize-screenshots
+
+Gemini API (imagen-3.0-generate-002)를 사용하여 앱 스크린샷을 여러 언어로 번역.
+
+**요구사항:**
+- Gemini API 키 설정 필요 ([설정 방법](#gemini-api-설정) 참조)
+- 스크린샷이 `public/products/{slug}/screenshots/{locale}/phone/` 및/또는 `tablet/`에 있어야 함
+
+**입력:**
+- `appName` (필수): 앱 이름, 슬러그, bundleId 또는 packageName
+- `targetLocales` (선택): 번역할 특정 로케일 (기본값: 지원하는 모든 로케일)
+- `deviceTypes` (선택): `phone`, `tablet` 또는 둘 다 (기본값: 둘 다)
+- `dryRun` (선택): 실제 번역 없이 미리보기 모드
+- `skipExisting` (선택): 번역된 파일이 있으면 건너뛰기 (기본값: true)
+
+**출력:**
+- 번역된 스크린샷을 `screenshots/{targetLocale}/phone/` 및 `tablet/`에 저장
+- 이미지를 소스 크기에 맞게 자동 리사이징
+
+**예시:**
+```
+screenshots/
+├── en-US/           # 소스 (기본 로케일)
+│   ├── phone/
+│   │   ├── 1.png
+│   │   └── 2.png
+│   └── tablet/
+│       └── 1.png
+├── ko-KR/           # 생성됨
+│   ├── phone/
+│   │   ├── 1.png
+│   │   └── 2.png
+│   └── tablet/
+│       └── 1.png
+└── ja-JP/           # 생성됨
+    └── ...
+```
+
+---
+
+## Gemini API 설정
+
+`localize-screenshots` 툴은 Gemini API 키가 필요합니다.
+
+### Gemini API 키 발급
+
+1. [Google AI Studio](https://aistudio.google.com/apikey)에 접속
+2. Google 계정으로 로그인
+3. "Create API Key" 클릭
+4. 생성된 API 키 복사
+5. **중요**: [Google Cloud Console](https://console.cloud.google.com/billing)에서 결제 계정을 연결해야 Imagen API 사용 가능
+
+### 설정 방법
+
+`~/.config/pabal-mcp/config.json`에 추가:
+
+```json
+{
+  "dataDir": "/path/to/your/project",
+  "gemini": {
+    "apiKey": "your-gemini-api-key"
+  }
+}
+```
+
+또는 `GEMINI_API_KEY` 환경변수를 설정해도 됩니다.
+
+---
+
 ## 필드 제한 참조
 
 ### Apple App Store

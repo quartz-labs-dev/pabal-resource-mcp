@@ -33,6 +33,11 @@ import {
   keywordResearchInputSchema,
   handleKeywordResearch,
 } from "./aso/keyword-research.js";
+import {
+  localizeScreenshotsTool,
+  localizeScreenshotsInputSchema,
+  handleLocalizeScreenshots,
+} from "./aso/localize-screenshots.js";
 
 // Apps Tools
 import {
@@ -108,6 +113,14 @@ export const tools: ToolInfo[] = [
     handler: handleKeywordResearch,
     category: "aso",
   },
+  {
+    name: localizeScreenshotsTool.name,
+    description: localizeScreenshotsTool.description,
+    inputSchema: localizeScreenshotsTool.inputSchema,
+    zodSchema: localizeScreenshotsInputSchema,
+    handler: handleLocalizeScreenshots,
+    category: "aso",
+  },
   // Apps Tools
   {
     name: initProjectTool.name,
@@ -147,6 +160,7 @@ export function getToolDefinitions() {
     initProjectTool,
     createBlogHtmlTool,
     keywordResearchTool,
+    localizeScreenshotsTool,
     searchAppTool,
     validateAsoTool,
   ];

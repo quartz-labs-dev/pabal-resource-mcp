@@ -2,8 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
 
+interface GeminiConfig {
+  apiKey?: string;
+}
+
 interface PabalMcpConfig {
   dataDir?: string;
+  gemini?: GeminiConfig;
 }
 
 /**
@@ -85,4 +90,50 @@ export function getKeywordResearchDir(): string {
  */
 export function getProductsDir(): string {
   return path.join(getPublicDir(), "products");
+}
+
+/**
+ * Load the full config from ~/.config/pabal-mcp/config.json
+ */
+function loadConfig(): PabalMcpConfig {
+  const configPath = path.join(
+    os.homedir(),
+    ".config",
+    "pabal-mcp",
+    "config.json"
+  );
+
+  if (!fs.existsSync(configPath)) {
+    return {};
+  }
+
+  try {
+    const configContent = fs.readFileSync(configPath, "utf-8");
+    return JSON.parse(configContent) as PabalMcpConfig;
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Get the Gemini API key from config.json or environment variable
+ * Priority: config.json > GEMINI_API_KEY > GOOGLE_API_KEY
+ */
+export function getGeminiApiKey(): string {
+  const config = loadConfig();
+
+  // Check config.json first
+  if (config.gemini?.apiKey) {
+    return config.gemini.apiKey;
+  }
+
+  // Fallback to environment variables
+  const envKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  if (envKey) {
+    return envKey;
+  }
+
+  throw new Error(
+    `Gemini API key not found. Set it in ~/.config/pabal-mcp/config.json under "gemini.apiKey" or use GEMINI_API_KEY environment variable.`
+  );
 }

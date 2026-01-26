@@ -1,4 +1,5 @@
 {
+  "dataDir": "/ABSOLUTE/PATH/TO/pabal-web",
   "googlePlay": {
     "serviceAccountKeyPath": "~/.config/pabal-mcp/google-play-service-account.json"
   },
@@ -6,5 +7,8 @@
     "issuerId": "your-issuer-id",
     "keyId": "your-key-id",
     "privateKeyPath": "~/.config/pabal-mcp/app-store-key.p8"
+  },
+  "gemini": {
+    "apiKey": "your-gemini-api-key"
   }
 }
