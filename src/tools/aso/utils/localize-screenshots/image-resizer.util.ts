@@ -38,10 +38,10 @@ export async function getImageDimensions(
 }
 
 /**
- * Detect dominant edge color from an image
- * Samples pixels from the edges (top, bottom, left, right) and finds the most common color
+ * Detect dominant background color from image corners
+ * Samples pixels from the 4 corner regions to avoid text/content in the center
  */
-async function detectEdgeColor(imagePath: string): Promise<RgbColor> {
+async function detectCornerColor(imagePath: string): Promise<RgbColor> {
   const image = sharp(imagePath);
   const metadata = await image.metadata();
   const width = metadata.width || 100;
@@ -55,17 +55,22 @@ async function detectEdgeColor(imagePath: string): Promise<RgbColor> {
   const channels = info.channels;
   const colorCounts = new Map<string, { count: number; color: RgbColor }>();
 
-  // Sample edge pixels
-  const sampleEdgePixel = (x: number, y: number) => {
+  // Corner region size: 5% of image dimensions (min 10px, max 100px)
+  const cornerWidth = Math.min(100, Math.max(10, Math.floor(width * 0.05)));
+  const cornerHeight = Math.min(100, Math.max(10, Math.floor(height * 0.05)));
+
+  const samplePixel = (x: number, y: number) => {
+    if (x < 0 || x >= width || y < 0 || y >= height) return;
+
     const idx = (y * width + x) * channels;
     const r = data[idx];
     const g = data[idx + 1];
     const b = data[idx + 2];
 
     // Quantize colors to reduce variations (group similar colors)
-    const qr = Math.round(r / 16) * 16;
-    const qg = Math.round(g / 16) * 16;
-    const qb = Math.round(b / 16) * 16;
+    const qr = Math.round(r / 8) * 8;
+    const qg = Math.round(g / 8) * 8;
+    const qb = Math.round(b / 8) * 8;
 
     const key = `${qr},${qg},${qb}`;
     const existing = colorCounts.get(key);
@@ -76,16 +81,21 @@ async function detectEdgeColor(imagePath: string): Promise<RgbColor> {
     }
   };
 
-  // Sample top and bottom edges
-  for (let x = 0; x < width; x += 2) {
-    sampleEdgePixel(x, 0); // Top edge
-    sampleEdgePixel(x, height - 1); // Bottom edge
-  }
+  // Sample 4 corner regions
+  const corners = [
+    { startX: 0, startY: 0 }, // Top-left
+    { startX: width - cornerWidth, startY: 0 }, // Top-right
+    { startX: 0, startY: height - cornerHeight }, // Bottom-left
+    { startX: width - cornerWidth, startY: height - cornerHeight }, // Bottom-right
+  ];
 
-  // Sample left and right edges
-  for (let y = 0; y < height; y += 2) {
-    sampleEdgePixel(0, y); // Left edge
-    sampleEdgePixel(width - 1, y); // Right edge
+  for (const corner of corners) {
+    // Sample every 2 pixels in corner region
+    for (let y = corner.startY; y < corner.startY + cornerHeight; y += 2) {
+      for (let x = corner.startX; x < corner.startX + cornerWidth; x += 2) {
+        samplePixel(x, y);
+      }
+    }
   }
 
   // Find most common color
@@ -126,8 +136,8 @@ export async function resizeImage(
   outputPath: string,
   targetDimensions: ImageDimensions
 ): Promise<void> {
-  // Detect background color from the input image edges
-  const bgColor = await detectEdgeColor(inputPath);
+  // Detect background color from the input image corners
+  const bgColor = await detectCornerColor(inputPath);
 
   await sharp(inputPath)
     .resize(targetDimensions.width, targetDimensions.height, {

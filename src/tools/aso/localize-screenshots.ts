@@ -66,10 +66,25 @@ export const localizeScreenshotsInputSchema = z.object({
     .default(true)
     .describe("Skip translation if target file already exists (default: true)"),
   screenshotNumbers: z
-    .array(z.number().int().positive())
+    .union([
+      z.array(z.number().int().positive()),
+      z.object({
+        phone: z.array(z.number().int().positive()).optional(),
+        tablet: z.array(z.number().int().positive()).optional(),
+      }),
+    ])
     .optional()
     .describe(
-      "Specific screenshot numbers to process (e.g., [1, 3, 5]). If not provided, all screenshots will be processed."
+      "Specific screenshot numbers to process. Can be:\n" +
+        "- Array for all devices: [1, 3, 5]\n" +
+        "- Object for per-device: { phone: [1, 2], tablet: [1, 3, 5] }\n" +
+        "If not provided, all screenshots will be processed."
+    ),
+  preserveWords: z
+    .array(z.string())
+    .optional()
+    .describe(
+      "Words to keep untranslated (e.g., brand names, product names). Example: [\"Pabal\", \"Pro\", \"AI\"]"
     ),
 });
 
@@ -261,6 +276,7 @@ export async function handleLocalizeScreenshots(
     dryRun = false,
     skipExisting = true,
     screenshotNumbers,
+    preserveWords,
   } = input;
 
   const results: string[] = [];
@@ -330,16 +346,47 @@ export async function handleLocalizeScreenshots(
   );
 
   // Filter by screenshot numbers if specified
-  if (screenshotNumbers && screenshotNumbers.length > 0) {
+  if (screenshotNumbers) {
+    // Normalize screenshotNumbers to per-device format
+    const isArray = Array.isArray(screenshotNumbers);
+    const phoneNumbers = isArray
+      ? screenshotNumbers
+      : screenshotNumbers.phone;
+    const tabletNumbers = isArray
+      ? screenshotNumbers
+      : screenshotNumbers.tablet;
+
     filteredScreenshots = filteredScreenshots.filter((s) => {
       const match = s.filename.match(/^(\d+)\./);
-      if (match) {
-        const num = parseInt(match[1], 10);
-        return screenshotNumbers.includes(num);
+      if (!match) return false;
+
+      const num = parseInt(match[1], 10);
+      const numbersForDevice =
+        s.type === "phone" ? phoneNumbers : tabletNumbers;
+
+      // If no filter specified for this device type, include all
+      if (!numbersForDevice || numbersForDevice.length === 0) {
+        return true;
       }
-      return false;
+
+      return numbersForDevice.includes(num);
     });
-    results.push(`🔢 Filtering screenshots: ${screenshotNumbers.join(", ")}`);
+
+    // Build filter description for output
+    const filterParts: string[] = [];
+    if (isArray) {
+      filterParts.push(`all: ${screenshotNumbers.join(", ")}`);
+    } else {
+      if (phoneNumbers && phoneNumbers.length > 0) {
+        filterParts.push(`phone: ${phoneNumbers.join(", ")}`);
+      }
+      if (tabletNumbers && tabletNumbers.length > 0) {
+        filterParts.push(`tablet: ${tabletNumbers.join(", ")}`);
+      }
+    }
+    if (filterParts.length > 0) {
+      results.push(`🔢 Filtering screenshots: ${filterParts.join(" | ")}`);
+    }
   }
 
   if (filteredScreenshots.length === 0) {
@@ -417,6 +464,10 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
   // Step 6: Execute translations
   results.push(`\n🚀 Starting translations...`);
 
+  if (preserveWords && preserveWords.length > 0) {
+    results.push(`🔒 Preserving words: ${preserveWords.join(", ")}`);
+  }
+
   const translationResult = await translateImagesWithProgress(
     tasks,
     (progress: TranslationProgress) => {
@@ -435,7 +486,8 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
           `❌ ${progressPrefix} ${progress.targetLocale}/${progress.deviceType}/${progress.filename}: ${progress.error}`
         );
       }
-    }
+    },
+    preserveWords
   );
 
   results.push(`\n📊 Translation Results:`);

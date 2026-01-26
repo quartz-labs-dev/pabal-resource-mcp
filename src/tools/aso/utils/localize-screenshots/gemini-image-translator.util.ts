@@ -167,7 +167,8 @@ export async function translateImage(
   sourcePath: string,
   sourceLocale: string,
   targetLocale: string,
-  outputPath: string
+  outputPath: string,
+  preserveWords?: string[]
 ): Promise<ImageTranslationResult> {
   try {
     const client = getGeminiClient();
@@ -181,6 +182,12 @@ export async function translateImage(
     // Read the source image
     const { data: imageData, mimeType } = readImageAsBase64(sourcePath);
 
+    // Build preserve words instruction if provided
+    const preserveInstruction =
+      preserveWords && preserveWords.length > 0
+        ? `\n- Do NOT translate these words, keep them exactly as-is: ${preserveWords.join(", ")}`
+        : "";
+
     // Create the translation prompt
     const prompt = `This is an app screenshot with text in ${sourceLanguage}.
 Please translate ONLY the text/words in this image to ${targetLanguage}.
@@ -191,7 +198,7 @@ IMPORTANT INSTRUCTIONS:
 - Maintain the same font style and text positioning as much as possible
 - Do NOT add any new elements or remove existing design elements
 - The output should look identical except the text language is ${targetLanguage}
-- Preserve all icons, images, and graphical elements exactly as they are`;
+- Preserve all icons, images, and graphical elements exactly as they are${preserveInstruction}`;
 
     // Create chat session for image editing
     const chat = client.chats.create({
@@ -283,7 +290,8 @@ export async function translateImagesWithProgress(
     deviceType: string;
     filename: string;
   }>,
-  onProgress?: (progress: TranslationProgress) => void
+  onProgress?: (progress: TranslationProgress) => void,
+  preserveWords?: string[]
 ): Promise<{
   successful: number;
   failed: number;
@@ -314,7 +322,8 @@ export async function translateImagesWithProgress(
       translation.sourcePath,
       translation.sourceLocale,
       translation.targetLocale,
-      translation.outputPath
+      translation.outputPath,
+      preserveWords
     );
 
     if (result.success) {
