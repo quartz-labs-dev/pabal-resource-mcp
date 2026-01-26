@@ -26,9 +26,10 @@ import {
   type ScreenshotInfo,
 } from "./utils/localize-screenshots/scan-screenshots.util.js";
 import {
-  translateImage,
   translateImagesWithProgress,
   type TranslationProgress,
+  isGeminiSupportedLocale,
+  getUnsupportedLocales,
 } from "./utils/localize-screenshots/gemini-image-translator.util.js";
 import {
   validateAndResizeImage,
@@ -178,13 +179,14 @@ function getSupportedLocales(slug: string): {
 }
 
 /**
- * Get target locales (excluding primary)
+ * Get target locales (excluding primary) and filter by Gemini support
+ * Returns both supported targets and skipped locales
  */
 function getTargetLocales(
   allLocales: string[],
   primaryLocale: string,
   requestedTargets?: string[]
-): string[] {
+): { targets: string[]; skippedLocales: string[] } {
   // Filter out primary locale
   let targets = allLocales.filter((locale) => locale !== primaryLocale);
 
@@ -197,14 +199,18 @@ function getTargetLocales(
 
     if (invalidTargets.length > 0) {
       console.warn(
-        `Warning: Some requested locales are not supported: ${invalidTargets.join(", ")}`
+        `Warning: Some requested locales are not in product: ${invalidTargets.join(", ")}`
       );
     }
 
     targets = validTargets.filter((t) => t !== primaryLocale);
   }
 
-  return targets;
+  // Filter by Gemini supported locales
+  const skippedLocales = getUnsupportedLocales(targets);
+  const supportedTargets = targets.filter((t) => isGeminiSupportedLocale(t));
+
+  return { targets: supportedTargets, skippedLocales };
 }
 
 /**
@@ -317,25 +323,32 @@ export async function handleLocalizeScreenshots(
     };
   }
 
-  // Step 3: Get target locales
-  const targetLocales = getTargetLocales(
+  // Step 3: Get target locales (filtered by Gemini support)
+  const { targets: targetLocales, skippedLocales } = getTargetLocales(
     allLocales,
     primaryLocale,
     requestedTargetLocales
   );
 
   if (targetLocales.length === 0) {
+    const skippedMsg =
+      skippedLocales.length > 0
+        ? ` (Skipped due to Gemini limitation: ${skippedLocales.join(", ")})`
+        : "";
     return {
       content: [
         {
           type: "text",
-          text: `❌ No target locales to translate to. Primary locale: ${primaryLocale}, Available: ${allLocales.join(", ")}`,
+          text: `❌ No target locales to translate to. Primary locale: ${primaryLocale}, Available: ${allLocales.join(", ")}${skippedMsg}`,
         },
       ],
     };
   }
 
   results.push(`🎯 Target locales: ${targetLocales.join(", ")}`);
+  if (skippedLocales.length > 0) {
+    results.push(`⚠️ Skipped locales (not supported by Gemini): ${skippedLocales.join(", ")}`);
+  }
 
   // Step 4: Scan source screenshots
   const sourceScreenshots = scanLocaleScreenshots(appInfo.slug, primaryLocale);

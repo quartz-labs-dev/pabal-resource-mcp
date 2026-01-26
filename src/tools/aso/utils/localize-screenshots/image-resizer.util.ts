@@ -129,6 +129,7 @@ export async function haveSameDimensions(
 
 /**
  * Resize image to match target dimensions while preserving aspect ratio
+ * Uses lanczos3 kernel for high-quality downscaling
  * Fills remaining space with the detected edge background color
  */
 export async function resizeImage(
@@ -144,6 +145,7 @@ export async function resizeImage(
       fit: "contain", // Preserve aspect ratio
       withoutEnlargement: false, // Allow enlargement if needed
       background: bgColor, // Use detected edge color
+      kernel: "lanczos3", // High-quality downscaling algorithm
     })
     .flatten({ background: bgColor }) // Ensure background is applied
     .png()

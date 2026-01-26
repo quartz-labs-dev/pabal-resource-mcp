@@ -11,6 +11,115 @@ import path from "node:path";
 import sharp from "sharp";
 import { getGeminiApiKey } from "../../../../utils/config.util.js";
 
+// App Store screenshot dimensions by device type
+export const SCREENSHOT_DIMENSIONS = {
+  phone: { width: 1242, height: 2688 }, // ratio: 0.462
+  tablet: { width: 2048, height: 2732 }, // ratio: 0.750
+} as const;
+
+// Gemini supported aspect ratios with 2K output dimensions (same token cost as 1K)
+// Source: https://ai.google.dev/gemini-api/docs/image-generation
+const GEMINI_ASPECT_RATIOS = {
+  "1:1": { ratio: 1 / 1, width: 2048, height: 2048 },
+  "2:3": { ratio: 2 / 3, width: 1696, height: 2528 },
+  "3:2": { ratio: 3 / 2, width: 2528, height: 1696 },
+  "3:4": { ratio: 3 / 4, width: 1792, height: 2400 },
+  "4:3": { ratio: 4 / 3, width: 2400, height: 1792 },
+  "4:5": { ratio: 4 / 5, width: 1856, height: 2304 },
+  "5:4": { ratio: 5 / 4, width: 2304, height: 1856 },
+  "9:16": { ratio: 9 / 16, width: 1536, height: 2752 },
+  "16:9": { ratio: 16 / 9, width: 2752, height: 1536 },
+  "21:9": { ratio: 21 / 9, width: 1584, height: 672 },
+} as const;
+
+type GeminiAspectRatio = keyof typeof GEMINI_ASPECT_RATIOS;
+
+// Closest Gemini aspect ratios for each device type
+// Phone: 1242/2688 = 0.462, closest is 9:16 (0.5625)
+// Tablet: 2048/2732 = 0.750, closest is 3:4 (0.75) ✓
+const DEVICE_ASPECT_RATIOS: Record<DeviceType, GeminiAspectRatio> = {
+  phone: "9:16",
+  tablet: "3:4",
+};
+
+export type DeviceType = keyof typeof SCREENSHOT_DIMENSIONS;
+
+// Gemini recommended languages for best performance
+// Source: https://ai.google.dev/gemini-api/docs/image-generation
+const GEMINI_SUPPORTED_LOCALES: Record<string, string> = {
+  // English variants
+  "en": "EN",
+  "en-US": "EN",
+  "en-GB": "EN",
+  "en-AU": "EN",
+  "en-CA": "EN",
+  // Arabic
+  "ar": "ar-EG",
+  "ar-EG": "ar-EG",
+  "ar-SA": "ar-EG",
+  // German
+  "de": "de-DE",
+  "de-DE": "de-DE",
+  // Spanish
+  "es": "es-MX",
+  "es-MX": "es-MX",
+  "es-ES": "es-MX",
+  "es-419": "es-MX",
+  // French
+  "fr": "fr-FR",
+  "fr-FR": "fr-FR",
+  "fr-CA": "fr-FR",
+  // Hindi
+  "hi": "hi-IN",
+  "hi-IN": "hi-IN",
+  // Indonesian
+  "id": "id-ID",
+  "id-ID": "id-ID",
+  // Italian
+  "it": "it-IT",
+  "it-IT": "it-IT",
+  // Japanese
+  "ja": "ja-JP",
+  "ja-JP": "ja-JP",
+  // Korean
+  "ko": "ko-KR",
+  "ko-KR": "ko-KR",
+  // Portuguese
+  "pt": "pt-BR",
+  "pt-BR": "pt-BR",
+  "pt-PT": "pt-BR",
+  // Russian
+  "ru": "ru-RU",
+  "ru-RU": "ru-RU",
+  // Ukrainian
+  "uk": "ua-UA",
+  "uk-UA": "ua-UA",
+  "ua-UA": "ua-UA",
+  // Vietnamese
+  "vi": "vi-VN",
+  "vi-VN": "vi-VN",
+  // Chinese
+  "zh": "zh-CN",
+  "zh-CN": "zh-CN",
+  "zh-Hans": "zh-CN",
+  "zh-TW": "zh-CN",
+  "zh-Hant": "zh-CN",
+};
+
+/**
+ * Check if a locale is supported by Gemini for image translation
+ */
+export function isGeminiSupportedLocale(locale: string): boolean {
+  return locale in GEMINI_SUPPORTED_LOCALES;
+}
+
+/**
+ * Get list of unsupported locales from a list
+ */
+export function getUnsupportedLocales(locales: string[]): string[] {
+  return locales.filter((locale) => !isGeminiSupportedLocale(locale));
+}
+
 // Language display names for better prompts
 const LANGUAGE_NAMES: Record<string, string> = {
   "en-US": "English (US)",
@@ -129,35 +238,10 @@ function readImageAsBase64(imagePath: string): {
 }
 
 /**
- * Get image dimensions
+ * Get Gemini aspect ratio for device type
  */
-async function getImageDimensions(
-  imagePath: string
-): Promise<{ width: number; height: number }> {
-  const metadata = await sharp(imagePath).metadata();
-  return {
-    width: metadata.width || 1080,
-    height: metadata.height || 1920,
-  };
-}
-
-/**
- * Calculate aspect ratio string from dimensions
- */
-function calculateAspectRatio(
-  width: number,
-  height: number
-): "1:1" | "9:16" | "16:9" | "3:4" | "4:3" {
-  const ratio = width / height;
-
-  if (Math.abs(ratio - 1) < 0.1) return "1:1";
-  if (Math.abs(ratio - 9 / 16) < 0.1) return "9:16";
-  if (Math.abs(ratio - 16 / 9) < 0.1) return "16:9";
-  if (Math.abs(ratio - 3 / 4) < 0.1) return "3:4";
-  if (Math.abs(ratio - 4 / 3) < 0.1) return "4:3";
-
-  // Default to closest match for phone screenshots
-  return ratio < 1 ? "9:16" : "16:9";
+function getAspectRatioForDevice(deviceType: DeviceType): string {
+  return DEVICE_ASPECT_RATIOS[deviceType];
 }
 
 /**
@@ -168,6 +252,7 @@ export async function translateImage(
   sourceLocale: string,
   targetLocale: string,
   outputPath: string,
+  deviceType: DeviceType,
   preserveWords?: string[]
 ): Promise<ImageTranslationResult> {
   try {
@@ -175,9 +260,8 @@ export async function translateImage(
     const sourceLanguage = getLanguageName(sourceLocale);
     const targetLanguage = getLanguageName(targetLocale);
 
-    // Get source image dimensions
-    const { width, height } = await getImageDimensions(sourcePath);
-    const aspectRatio = calculateAspectRatio(width, height);
+    // Get aspect ratio for device type
+    const aspectRatio = getAspectRatioForDevice(deviceType);
 
     // Read the source image
     const { data: imageData, mimeType } = readImageAsBase64(sourcePath);
@@ -323,6 +407,7 @@ export async function translateImagesWithProgress(
       translation.sourceLocale,
       translation.targetLocale,
       translation.outputPath,
+      translation.deviceType as DeviceType,
       preserveWords
     );
 
