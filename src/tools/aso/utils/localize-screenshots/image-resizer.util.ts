@@ -2,6 +2,7 @@
  * Image Resizer Utility
  *
  * Uses sharp library to validate and resize images to match source dimensions
+ * Preserves aspect ratio and fills remaining space with detected background color
  */
 
 import sharp from "sharp";
@@ -10,6 +11,12 @@ import fs from "node:fs";
 export interface ImageDimensions {
   width: number;
   height: number;
+}
+
+export interface RgbColor {
+  r: number;
+  g: number;
+  b: number;
 }
 
 /**
@@ -31,6 +38,71 @@ export async function getImageDimensions(
 }
 
 /**
+ * Detect dominant edge color from an image
+ * Samples pixels from the edges (top, bottom, left, right) and finds the most common color
+ */
+async function detectEdgeColor(imagePath: string): Promise<RgbColor> {
+  const image = sharp(imagePath);
+  const metadata = await image.metadata();
+  const width = metadata.width || 100;
+  const height = metadata.height || 100;
+
+  // Get raw pixel data
+  const { data, info } = await image
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const channels = info.channels;
+  const colorCounts = new Map<string, { count: number; color: RgbColor }>();
+
+  // Sample edge pixels
+  const sampleEdgePixel = (x: number, y: number) => {
+    const idx = (y * width + x) * channels;
+    const r = data[idx];
+    const g = data[idx + 1];
+    const b = data[idx + 2];
+
+    // Quantize colors to reduce variations (group similar colors)
+    const qr = Math.round(r / 16) * 16;
+    const qg = Math.round(g / 16) * 16;
+    const qb = Math.round(b / 16) * 16;
+
+    const key = `${qr},${qg},${qb}`;
+    const existing = colorCounts.get(key);
+    if (existing) {
+      existing.count++;
+    } else {
+      colorCounts.set(key, { count: 1, color: { r: qr, g: qg, b: qb } });
+    }
+  };
+
+  // Sample top and bottom edges
+  for (let x = 0; x < width; x += 2) {
+    sampleEdgePixel(x, 0); // Top edge
+    sampleEdgePixel(x, height - 1); // Bottom edge
+  }
+
+  // Sample left and right edges
+  for (let y = 0; y < height; y += 2) {
+    sampleEdgePixel(0, y); // Left edge
+    sampleEdgePixel(width - 1, y); // Right edge
+  }
+
+  // Find most common color
+  let maxCount = 0;
+  let dominantColor: RgbColor = { r: 255, g: 255, b: 255 }; // Default to white
+
+  for (const { count, color } of colorCounts.values()) {
+    if (count > maxCount) {
+      maxCount = count;
+      dominantColor = color;
+    }
+  }
+
+  return dominantColor;
+}
+
+/**
  * Check if two images have the same dimensions
  */
 export async function haveSameDimensions(
@@ -46,18 +118,25 @@ export async function haveSameDimensions(
 }
 
 /**
- * Resize image to match target dimensions
+ * Resize image to match target dimensions while preserving aspect ratio
+ * Fills remaining space with the detected edge background color
  */
 export async function resizeImage(
   inputPath: string,
   outputPath: string,
   targetDimensions: ImageDimensions
 ): Promise<void> {
+  // Detect background color from the input image edges
+  const bgColor = await detectEdgeColor(inputPath);
+
   await sharp(inputPath)
     .resize(targetDimensions.width, targetDimensions.height, {
-      fit: "fill", // Exact resize to target dimensions
+      fit: "contain", // Preserve aspect ratio
       withoutEnlargement: false, // Allow enlargement if needed
+      background: bgColor, // Use detected edge color
     })
+    .flatten({ background: bgColor }) // Ensure background is applied
+    .png()
     .toFile(outputPath + ".tmp");
 
   // Replace original with resized

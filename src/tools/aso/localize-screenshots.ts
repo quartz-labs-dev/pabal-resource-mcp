@@ -65,6 +65,12 @@ export const localizeScreenshotsInputSchema = z.object({
     .optional()
     .default(true)
     .describe("Skip translation if target file already exists (default: true)"),
+  screenshotNumbers: z
+    .array(z.number().int().positive())
+    .optional()
+    .describe(
+      "Specific screenshot numbers to process (e.g., [1, 3, 5]). If not provided, all screenshots will be processed."
+    ),
 });
 
 export type LocalizeScreenshotsInput = z.infer<
@@ -254,6 +260,7 @@ export async function handleLocalizeScreenshots(
     deviceTypes = ["phone", "tablet"],
     dryRun = false,
     skipExisting = true,
+    screenshotNumbers,
   } = input;
 
   const results: string[] = [];
@@ -318,9 +325,22 @@ export async function handleLocalizeScreenshots(
   const sourceScreenshots = scanLocaleScreenshots(appInfo.slug, primaryLocale);
 
   // Filter by device types
-  const filteredScreenshots = sourceScreenshots.filter((s) =>
+  let filteredScreenshots = sourceScreenshots.filter((s) =>
     deviceTypes.includes(s.type)
   );
+
+  // Filter by screenshot numbers if specified
+  if (screenshotNumbers && screenshotNumbers.length > 0) {
+    filteredScreenshots = filteredScreenshots.filter((s) => {
+      const match = s.filename.match(/^(\d+)\./);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        return screenshotNumbers.includes(num);
+      }
+      return false;
+    });
+    results.push(`🔢 Filtering screenshots: ${screenshotNumbers.join(", ")}`);
+  }
 
   if (filteredScreenshots.length === 0) {
     const screenshotsDir = getScreenshotsDir(appInfo.slug);
