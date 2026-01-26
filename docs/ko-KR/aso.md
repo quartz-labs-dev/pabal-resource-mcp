@@ -81,7 +81,7 @@ ASO 최적화를 위한 키워드 리서치 데이터 관리.
 
 ### localize-screenshots
 
-Gemini API (imagen-3.0-generate-002)를 사용하여 앱 스크린샷을 여러 언어로 번역.
+Gemini API (gemini-3-pro-image-preview)를 사용하여 앱 스크린샷을 여러 언어로 번역.
 
 **요구사항:**
 - Gemini API 키 설정 필요 ([설정 방법](#gemini-api-설정) 참조)

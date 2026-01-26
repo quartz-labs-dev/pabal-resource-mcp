@@ -2,12 +2,13 @@
  * Gemini API Image Translator Utility
  *
  * Translates text within images using Google Gemini API
- * Model: imagen-3.0-generate-002 (nano banana pro)
+ * Model: gemini-3-pro-image-preview
  */
 
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import fs from "node:fs";
 import path from "node:path";
+import sharp from "sharp";
 import { getGeminiApiKey } from "../../../../utils/config.util.js";
 
 // Language display names for better prompts
@@ -94,6 +95,8 @@ export interface TranslationProgress {
   filename: string;
   status: "pending" | "translating" | "completed" | "failed";
   error?: string;
+  current: number;
+  total: number;
 }
 
 /**
@@ -126,6 +129,38 @@ function readImageAsBase64(imagePath: string): {
 }
 
 /**
+ * Get image dimensions
+ */
+async function getImageDimensions(
+  imagePath: string
+): Promise<{ width: number; height: number }> {
+  const metadata = await sharp(imagePath).metadata();
+  return {
+    width: metadata.width || 1080,
+    height: metadata.height || 1920,
+  };
+}
+
+/**
+ * Calculate aspect ratio string from dimensions
+ */
+function calculateAspectRatio(
+  width: number,
+  height: number
+): "1:1" | "9:16" | "16:9" | "3:4" | "4:3" {
+  const ratio = width / height;
+
+  if (Math.abs(ratio - 1) < 0.1) return "1:1";
+  if (Math.abs(ratio - 9 / 16) < 0.1) return "9:16";
+  if (Math.abs(ratio - 16 / 9) < 0.1) return "16:9";
+  if (Math.abs(ratio - 3 / 4) < 0.1) return "3:4";
+  if (Math.abs(ratio - 4 / 3) < 0.1) return "4:3";
+
+  // Default to closest match for phone screenshots
+  return ratio < 1 ? "9:16" : "16:9";
+}
+
+/**
  * Translate text in an image using Gemini API
  */
 export async function translateImage(
@@ -138,6 +173,10 @@ export async function translateImage(
     const client = getGeminiClient();
     const sourceLanguage = getLanguageName(sourceLocale);
     const targetLanguage = getLanguageName(targetLocale);
+
+    // Get source image dimensions
+    const { width, height } = await getImageDimensions(sourcePath);
+    const aspectRatio = calculateAspectRatio(width, height);
 
     // Read the source image
     const { data: imageData, mimeType } = readImageAsBase64(sourcePath);
@@ -154,25 +193,30 @@ IMPORTANT INSTRUCTIONS:
 - The output should look identical except the text language is ${targetLanguage}
 - Preserve all icons, images, and graphical elements exactly as they are`;
 
-    // Call Gemini API for image generation/editing
-    const response = await client.models.generateContent({
-      model: "imagen-3.0-generate-002",
-      contents: [
+    // Create chat session for image editing
+    const chat = client.chats.create({
+      model: "gemini-3-pro-image-preview",
+      config: {
+        responseModalities: ["TEXT", "IMAGE"],
+      },
+    });
+
+    // Send message with image
+    const response = await chat.sendMessage({
+      message: [
+        { text: prompt },
         {
-          role: "user",
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType,
-                data: imageData,
-              },
-            },
-          ],
+          inlineData: {
+            mimeType,
+            data: imageData,
+          },
         },
       ],
       config: {
-        responseModalities: [Modality.TEXT, Modality.IMAGE],
+        responseModalities: ["TEXT", "IMAGE"],
+        imageConfig: {
+          aspectRatio,
+        },
       },
     });
 
@@ -204,8 +248,8 @@ IMPORTANT INSTRUCTIONS:
           fs.mkdirSync(outputDir, { recursive: true });
         }
 
-        // Save the translated image
-        fs.writeFileSync(outputPath, imageBuffer);
+        // Convert to PNG and save
+        await sharp(imageBuffer).png().toFile(outputPath);
 
         return {
           success: true,
@@ -248,14 +292,20 @@ export async function translateImagesWithProgress(
   let successful = 0;
   let failed = 0;
   const errors: Array<{ path: string; error: string }> = [];
+  const total = translations.length;
 
-  for (const translation of translations) {
+  for (let i = 0; i < translations.length; i++) {
+    const translation = translations[i];
+    const current = i + 1;
+
     const progress: TranslationProgress = {
       sourceLocale: translation.sourceLocale,
       targetLocale: translation.targetLocale,
       deviceType: translation.deviceType,
       filename: translation.filename,
       status: "translating",
+      current,
+      total,
     };
 
     onProgress?.(progress);
@@ -274,7 +324,10 @@ export async function translateImagesWithProgress(
       failed++;
       progress.status = "failed";
       progress.error = result.error;
-      errors.push({ path: translation.sourcePath, error: result.error || "Unknown error" });
+      errors.push({
+        path: translation.sourcePath,
+        error: result.error || "Unknown error",
+      });
     }
 
     onProgress?.(progress);

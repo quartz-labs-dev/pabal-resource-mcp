@@ -400,14 +400,19 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
   const translationResult = await translateImagesWithProgress(
     tasks,
     (progress: TranslationProgress) => {
-      // Progress callback - could be used for real-time updates
-      if (progress.status === "completed") {
+      // Progress callback - real-time updates with current/total
+      const progressPrefix = `[${progress.current}/${progress.total}]`;
+      if (progress.status === "translating") {
         console.log(
-          `✅ ${progress.targetLocale}/${progress.deviceType}/${progress.filename}`
+          `🔄 ${progressPrefix} Translating ${progress.targetLocale}/${progress.deviceType}/${progress.filename}...`
+        );
+      } else if (progress.status === "completed") {
+        console.log(
+          `✅ ${progressPrefix} ${progress.targetLocale}/${progress.deviceType}/${progress.filename}`
         );
       } else if (progress.status === "failed") {
         console.log(
-          `❌ ${progress.targetLocale}/${progress.deviceType}/${progress.filename}: ${progress.error}`
+          `❌ ${progressPrefix} ${progress.targetLocale}/${progress.deviceType}/${progress.filename}: ${progress.error}`
         );
       }
     }

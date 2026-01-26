@@ -81,7 +81,7 @@ Manages keyword research data for ASO optimization.
 
 ### localize-screenshots
 
-Translates app screenshots to multiple languages using Gemini API (imagen-3.0-generate-002).
+Translates app screenshots to multiple languages using Gemini API (gemini-3-pro-image-preview).
 
 **Requirements:**
 - Gemini API key must be configured (see [Configuration](#gemini-api-configuration))
