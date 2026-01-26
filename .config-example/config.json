@@ -1,0 +1,10 @@
+{
+  "googlePlay": {
+    "serviceAccountKeyPath": "~/.config/pabal-mcp/google-play-service-account.json"
+  },
+  "appStore": {
+    "issuerId": "your-issuer-id",
+    "keyId": "your-key-id",
+    "privateKeyPath": "~/.config/pabal-mcp/app-store-key.p8"
+  }
+}
