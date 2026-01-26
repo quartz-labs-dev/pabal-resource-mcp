@@ -98,6 +98,9 @@ Gemini API (gemini-3-pro-image-preview)를 사용하여 앱 스크린샷을 여�
 - 번역된 스크린샷을 `screenshots/{targetLocale}/phone/` 및 `tablet/`에 저장
 - 이미지를 소스 크기에 맞게 자동 리사이징
 
+**비용 정보:**
+- 이미지 생성 시 장당 약 $0.14, 2,000 tokens 소모
+
 **예시:**
 ```
 screenshots/

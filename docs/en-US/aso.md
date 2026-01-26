@@ -98,6 +98,9 @@ Translates app screenshots to multiple languages using Gemini API (gemini-3-pro-
 - Translated screenshots saved to `screenshots/{targetLocale}/phone/` and `tablet/`
 - Images automatically resized to match source dimensions
 
+**Cost Information:**
+- Image generation costs approximately $0.14 per image, consuming 2,000 tokens
+
 **Example:**
 ```
 screenshots/
