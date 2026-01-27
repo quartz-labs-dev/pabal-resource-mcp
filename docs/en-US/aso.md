@@ -90,16 +90,47 @@ Translates app screenshots to multiple languages using Gemini API (gemini-3-pro-
 **Input:**
 - `appName` (required): App name, slug, bundleId, or packageName
 - `targetLocales` (optional): Specific locales to translate to (defaults to all supported locales)
-- `deviceTypes` (optional): `phone`, `tablet`, or both (default: both)
-- `dryRun` (optional): Preview mode without actual translation
+- `deviceTypes` (optional): `["phone"]`, `["tablet"]`, or `["phone", "tablet"]` (default: both)
+- `dryRun` (optional): Preview mode without actual translation (default: false)
 - `skipExisting` (optional): Skip if translated file exists (default: true)
+- `screenshotNumbers` (optional): Specific screenshot numbers to process
+  - Array for all devices: `[1, 3, 5]`
+  - Object for per-device: `{ phone: [1, 2], tablet: [1, 3, 5] }`
+  - If not provided, all screenshots will be processed
+- `preserveWords` (optional): Words to keep untranslated (e.g., `["Pabal", "Pro", "AI"]`)
 
 **Output:**
 - Translated screenshots saved to `screenshots/{targetLocale}/phone/` and `tablet/`
 - Images automatically resized to match source dimensions
 
 **Cost Information:**
-- Image generation costs approximately $0.14 per image, consuming 2,000 tokens
+- Image generation costs approximately $0.13 per image
+
+**Supported Languages:**
+
+For best performance, only the following languages are supported for image generation, as specified in the [Gemini API documentation](https://ai.google.dev/gemini-api/docs/image-generation#limitations):
+
+| Gemini Locale | Output Locales (UnifiedLocale) |
+|---------------|-------------------------------|
+| `en-US` (English) | en-US, en-AU, en-CA, en-GB, en-IN, en-SG, en-ZA |
+| `ar-EG` (Arabic) | ar |
+| `de-DE` (German) | de-DE |
+| `es-MX` (Spanish) | es-419, es-ES, es-US |
+| `fr-FR` (French) | fr-FR, fr-CA |
+| `hi-IN` (Hindi) | hi-IN |
+| `id-ID` (Indonesian) | id-ID |
+| `it-IT` (Italian) | it-IT |
+| `ja-JP` (Japanese) | ja-JP |
+| `ko-KR` (Korean) | ko-KR |
+| `pt-BR` (Portuguese) | pt-BR, pt-PT |
+| `ru-RU` (Russian) | ru-RU |
+| `ua-UA` (Ukrainian) | uk-UA |
+| `vi-VN` (Vietnamese) | vi-VN |
+| `zh-CN` (Chinese) | zh-Hans, zh-Hant, zh-HK |
+
+Similar locales are grouped together to reduce API calls. For example, translating to Spanish (`es-MX`) will automatically save the same image to `es-419`, `es-ES`, and `es-US` folders.
+
+Locales not in the supported list will be skipped during translation.
 
 **Example:**
 ```

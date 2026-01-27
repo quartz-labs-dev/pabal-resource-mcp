@@ -22,19 +22,14 @@ import {
 import {
   scanLocaleScreenshots,
   getScreenshotsDir,
-  ensureOutputDir,
   type ScreenshotInfo,
 } from "./utils/localize-screenshots/scan-screenshots.util.js";
 import {
   translateImagesWithProgress,
   type TranslationProgress,
-  isGeminiSupportedLocale,
-  getUnsupportedLocales,
 } from "./utils/localize-screenshots/gemini-image-translator.util.js";
-import {
-  validateAndResizeImage,
-  batchValidateAndResize,
-} from "./utils/localize-screenshots/image-resizer.util.js";
+import { prepareLocalesForTranslation } from "./utils/localize-screenshots/locale-mapping.constants.js";
+import { batchValidateAndResize } from "./utils/localize-screenshots/image-resizer.util.js";
 
 const TOOL_NAME = "localize-screenshots";
 
@@ -179,18 +174,24 @@ function getSupportedLocales(slug: string): {
 }
 
 /**
- * Get target locales (excluding primary) and filter by Gemini support
- * Returns both supported targets and skipped locales
+ * Get target locales (excluding primary) with intelligent filtering:
+ * 1. Groups similar locales (e.g., en-US, en-GB -> only translate en-US)
+ * 2. Filters by Gemini API support
+ * Returns targets to translate and metadata about skipped/grouped locales
  */
 function getTargetLocales(
   allLocales: string[],
   primaryLocale: string,
   requestedTargets?: string[]
-): { targets: string[]; skippedLocales: string[] } {
-  // Filter out primary locale
-  let targets = allLocales.filter((locale) => locale !== primaryLocale);
+): {
+  targets: string[];
+  skippedLocales: string[];
+  groupedLocales: string[];
+  localeMapping: Map<string, string[]>;
+} {
+  // If specific targets requested, validate and filter first
+  let localesToProcess = allLocales;
 
-  // If specific targets requested, validate and filter
   if (requestedTargets && requestedTargets.length > 0) {
     const validTargets = requestedTargets.filter((t) => allLocales.includes(t));
     const invalidTargets = requestedTargets.filter(
@@ -203,55 +204,76 @@ function getTargetLocales(
       );
     }
 
-    targets = validTargets.filter((t) => t !== primaryLocale);
+    localesToProcess = validTargets;
   }
 
-  // Filter by Gemini supported locales
-  const skippedLocales = getUnsupportedLocales(targets);
-  const supportedTargets = targets.filter((t) => isGeminiSupportedLocale(t));
+  // Use the centralized locale preparation function
+  // This handles: primary exclusion, similar locale grouping, Gemini support filtering
+  const {
+    translatableLocales,
+    localeMapping,
+    skippedLocales,
+    groupedLocales,
+  } = prepareLocalesForTranslation(localesToProcess, primaryLocale);
 
-  return { targets: supportedTargets, skippedLocales };
+  return {
+    targets: translatableLocales,
+    skippedLocales,
+    groupedLocales,
+    localeMapping,
+  };
+}
+
+interface TranslationTask {
+  sourcePath: string;
+  sourceLocale: string;
+  targetLocale: string;
+  outputPaths: string[]; // Multiple paths: representative + grouped locales
+  deviceType: string;
+  filename: string;
 }
 
 /**
- * Build translation tasks
+ * Build translation tasks with grouped locale support
+ * Each task includes outputPaths for representative + all grouped locales
  */
 function buildTranslationTasks(
   slug: string,
   screenshots: ScreenshotInfo[],
   primaryLocale: string,
   targetLocales: string[],
+  localeMapping: Map<string, string[]>,
   skipExisting: boolean
-): Array<{
-  sourcePath: string;
-  sourceLocale: string;
-  targetLocale: string;
-  outputPath: string;
-  deviceType: string;
-  filename: string;
-}> {
-  const tasks: Array<{
-    sourcePath: string;
-    sourceLocale: string;
-    targetLocale: string;
-    outputPath: string;
-    deviceType: string;
-    filename: string;
-  }> = [];
+): TranslationTask[] {
+  const tasks: TranslationTask[] = [];
 
   const screenshotsDir = getScreenshotsDir(slug);
 
   for (const targetLocale of targetLocales) {
-    for (const screenshot of screenshots) {
-      const outputPath = path.join(
-        screenshotsDir,
-        targetLocale,
-        screenshot.type,
-        screenshot.filename
-      );
+    // targetLocale is a GeminiTargetLocale (e.g., "es-MX", "ua-UA")
+    // localeMapping contains UnifiedLocales to save to (e.g., ["es-419", "es-ES"])
+    const outputLocales = localeMapping.get(targetLocale) || [];
 
-      // Skip if file exists and skipExisting is true
-      if (skipExisting && fs.existsSync(outputPath)) {
+    for (const screenshot of screenshots) {
+      // Build output paths for all locales in this group
+      const outputPaths: string[] = [];
+
+      for (const locale of outputLocales) {
+        const outputPath = path.join(
+          screenshotsDir,
+          locale,
+          screenshot.type,
+          screenshot.filename
+        );
+
+        // Only add path if file doesn't exist or skipExisting is false
+        if (!skipExisting || !fs.existsSync(outputPath)) {
+          outputPaths.push(outputPath);
+        }
+      }
+
+      // Skip this task entirely if all output paths already exist
+      if (outputPaths.length === 0) {
         continue;
       }
 
@@ -259,7 +281,7 @@ function buildTranslationTasks(
         sourcePath: screenshot.fullPath,
         sourceLocale: primaryLocale,
         targetLocale,
-        outputPath,
+        outputPaths,
         deviceType: screenshot.type,
         filename: screenshot.filename,
       });
@@ -323,12 +345,15 @@ export async function handleLocalizeScreenshots(
     };
   }
 
-  // Step 3: Get target locales (filtered by Gemini support)
-  const { targets: targetLocales, skippedLocales } = getTargetLocales(
-    allLocales,
-    primaryLocale,
-    requestedTargetLocales
-  );
+  // Step 3: Get target locales with intelligent filtering
+  // - Groups similar locales (e.g., en-US, en-GB -> only translate en-US)
+  // - Filters by Gemini API support
+  const {
+    targets: targetLocales,
+    skippedLocales,
+    groupedLocales,
+    localeMapping,
+  } = getTargetLocales(allLocales, primaryLocale, requestedTargetLocales);
 
   if (targetLocales.length === 0) {
     const skippedMsg =
@@ -345,9 +370,16 @@ export async function handleLocalizeScreenshots(
     };
   }
 
-  results.push(`🎯 Target locales: ${targetLocales.join(", ")}`);
+  results.push(`🎯 Target locales to translate: ${targetLocales.join(", ")}`);
+  if (groupedLocales.length > 0) {
+    results.push(
+      `📋 Grouped locales (saved together): ${groupedLocales.join(", ")}`
+    );
+  }
   if (skippedLocales.length > 0) {
-    results.push(`⚠️ Skipped locales (not supported by Gemini): ${skippedLocales.join(", ")}`);
+    results.push(
+      `⚠️ Skipped locales (not supported by Gemini): ${skippedLocales.join(", ")}`
+    );
   }
 
   // Step 4: Scan source screenshots
@@ -422,12 +454,13 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
   const tabletCount = filteredScreenshots.filter((s) => s.type === "tablet").length;
   results.push(`📸 Source screenshots: ${phoneCount} phone, ${tabletCount} tablet`);
 
-  // Step 5: Build translation tasks
+  // Step 5: Build translation tasks (includes grouped locales in outputPaths)
   const tasks = buildTranslationTasks(
     appInfo.slug,
     filteredScreenshots,
     primaryLocale,
     targetLocales,
+    localeMapping,
     skipExisting
   );
 
@@ -458,7 +491,13 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
     }
 
     for (const [locale, localeTasks] of Object.entries(tasksByLocale)) {
-      results.push(`\n📁 ${locale}:`);
+      // Show grouped locales that will also receive this translation
+      const grouped = localeMapping.get(locale) || [];
+      const groupedOthers = grouped.filter((l) => l !== locale);
+      const groupInfo =
+        groupedOthers.length > 0 ? ` → also: ${groupedOthers.join(", ")}` : "";
+
+      results.push(`\n📁 ${locale}${groupInfo}:`);
       for (const task of localeTasks) {
         results.push(`   - ${task.deviceType}/${task.filename}`);
       }
@@ -517,15 +556,22 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
     }
   }
 
-  // Step 7: Validate and resize images
+  // Step 7: Validate and resize images (for all output paths including grouped locales)
   if (translationResult.successful > 0) {
     results.push(`\n🔍 Validating image dimensions...`);
 
-    const successfulTasks = tasks.filter((t) => fs.existsSync(t.outputPath));
-    const resizePairs = successfulTasks.map((t) => ({
-      sourcePath: t.sourcePath,
-      translatedPath: t.outputPath,
-    }));
+    // Collect all output paths that exist for validation
+    const resizePairs: Array<{ sourcePath: string; translatedPath: string }> = [];
+    for (const task of tasks) {
+      for (const outputPath of task.outputPaths) {
+        if (fs.existsSync(outputPath)) {
+          resizePairs.push({
+            sourcePath: task.sourcePath,
+            translatedPath: outputPath,
+          });
+        }
+      }
+    }
 
     const resizeResult = await batchValidateAndResize(resizePairs);
 

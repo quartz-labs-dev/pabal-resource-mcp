@@ -90,16 +90,47 @@ Gemini API (gemini-3-pro-image-preview)를 사용하여 앱 스크린샷을 여�
 **입력:**
 - `appName` (필수): 앱 이름, 슬러그, bundleId 또는 packageName
 - `targetLocales` (선택): 번역할 특정 로케일 (기본값: 지원하는 모든 로케일)
-- `deviceTypes` (선택): `phone`, `tablet` 또는 둘 다 (기본값: 둘 다)
-- `dryRun` (선택): 실제 번역 없이 미리보기 모드
+- `deviceTypes` (선택): `["phone"]`, `["tablet"]`, 또는 `["phone", "tablet"]` (기본값: 둘 다)
+- `dryRun` (선택): 실제 번역 없이 미리보기 모드 (기본값: false)
 - `skipExisting` (선택): 번역된 파일이 있으면 건너뛰기 (기본값: true)
+- `screenshotNumbers` (선택): 처리할 특정 스크린샷 번호
+  - 모든 기기에 적용: `[1, 3, 5]`
+  - 기기별 지정: `{ phone: [1, 2], tablet: [1, 3, 5] }`
+  - 지정하지 않으면 모든 스크린샷 처리
+- `preserveWords` (선택): 번역하지 않을 단어 (예: `["Pabal", "Pro", "AI"]`)
 
 **출력:**
 - 번역된 스크린샷을 `screenshots/{targetLocale}/phone/` 및 `tablet/`에 저장
 - 이미지를 소스 크기에 맞게 자동 리사이징
 
 **비용 정보:**
-- 이미지 생성 시 장당 약 $0.14, 2,000 tokens 소모
+- 이미지 생성 시 장당 약 $0.13
+
+**지원 언어:**
+
+최적의 성능을 위해 [Gemini API 문서](https://ai.google.dev/gemini-api/docs/image-generation#limitations)에 명시된 다음 언어만 이미지 생성을 지원합니다:
+
+| Gemini 로케일 | 출력 로케일 (UnifiedLocale) |
+|--------------|----------------------------|
+| `en-US` (영어) | en-US, en-AU, en-CA, en-GB, en-IN, en-SG, en-ZA |
+| `ar-EG` (아랍어) | ar |
+| `de-DE` (독일어) | de-DE |
+| `es-MX` (스페인어) | es-419, es-ES, es-US |
+| `fr-FR` (프랑스어) | fr-FR, fr-CA |
+| `hi-IN` (힌디어) | hi-IN |
+| `id-ID` (인도네시아어) | id-ID |
+| `it-IT` (이탈리아어) | it-IT |
+| `ja-JP` (일본어) | ja-JP |
+| `ko-KR` (한국어) | ko-KR |
+| `pt-BR` (포르투갈어) | pt-BR, pt-PT |
+| `ru-RU` (러시아어) | ru-RU |
+| `ua-UA` (우크라이나어) | uk-UA |
+| `vi-VN` (베트남어) | vi-VN |
+| `zh-CN` (중국어) | zh-Hans, zh-Hant, zh-HK |
+
+유사한 로케일은 그룹으로 묶어 API 호출을 줄입니다. 예를 들어, 스페인어(`es-MX`)로 번역하면 동일한 이미지가 `es-419`, `es-ES`, `es-US` 폴더에 자동으로 저장됩니다.
+
+지원 목록에 없는 로케일은 번역 시 건너뜁니다.
 
 **예시:**
 ```

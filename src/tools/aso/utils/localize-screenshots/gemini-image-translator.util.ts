@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import { getGeminiApiKey } from "../../../../utils/config.util.js";
+import { type GeminiTargetLocale } from "./locale-mapping.constants.js";
 
 // App Store screenshot dimensions by device type
 export const SCREENSHOT_DIMENSIONS = {
@@ -44,150 +45,37 @@ const DEVICE_ASPECT_RATIOS: Record<DeviceType, GeminiAspectRatio> = {
 
 export type DeviceType = keyof typeof SCREENSHOT_DIMENSIONS;
 
-// Gemini recommended languages for best performance
-// Source: https://ai.google.dev/gemini-api/docs/image-generation
-const GEMINI_SUPPORTED_LOCALES: Record<string, string> = {
-  // English variants
-  "en": "EN",
-  "en-US": "EN",
-  "en-GB": "EN",
-  "en-AU": "EN",
-  "en-CA": "EN",
-  // Arabic
-  "ar": "ar-EG",
-  "ar-EG": "ar-EG",
-  "ar-SA": "ar-EG",
-  // German
-  "de": "de-DE",
-  "de-DE": "de-DE",
-  // Spanish
-  "es": "es-MX",
-  "es-MX": "es-MX",
-  "es-ES": "es-MX",
-  "es-419": "es-MX",
-  // French
-  "fr": "fr-FR",
-  "fr-FR": "fr-FR",
-  "fr-CA": "fr-FR",
-  // Hindi
-  "hi": "hi-IN",
-  "hi-IN": "hi-IN",
-  // Indonesian
-  "id": "id-ID",
-  "id-ID": "id-ID",
-  // Italian
-  "it": "it-IT",
-  "it-IT": "it-IT",
-  // Japanese
-  "ja": "ja-JP",
-  "ja-JP": "ja-JP",
-  // Korean
-  "ko": "ko-KR",
-  "ko-KR": "ko-KR",
-  // Portuguese
-  "pt": "pt-BR",
-  "pt-BR": "pt-BR",
-  "pt-PT": "pt-BR",
-  // Russian
-  "ru": "ru-RU",
-  "ru-RU": "ru-RU",
-  // Ukrainian
-  "uk": "ua-UA",
-  "uk-UA": "ua-UA",
-  "ua-UA": "ua-UA",
-  // Vietnamese
-  "vi": "vi-VN",
-  "vi-VN": "vi-VN",
-  // Chinese
-  "zh": "zh-CN",
-  "zh-CN": "zh-CN",
-  "zh-Hans": "zh-CN",
-  "zh-TW": "zh-CN",
-  "zh-Hant": "zh-CN",
-};
-
 /**
- * Check if a locale is supported by Gemini for image translation
+ * Language display names for Gemini-supported locales
+ * Only includes locales that Gemini actually supports for image generation
+ * Source: https://ai.google.dev/gemini-api/docs/image-generation
  */
-export function isGeminiSupportedLocale(locale: string): boolean {
-  return locale in GEMINI_SUPPORTED_LOCALES;
-}
-
-/**
- * Get list of unsupported locales from a list
- */
-export function getUnsupportedLocales(locales: string[]): string[] {
-  return locales.filter((locale) => !isGeminiSupportedLocale(locale));
-}
-
-// Language display names for better prompts
-const LANGUAGE_NAMES: Record<string, string> = {
-  "en-US": "English (US)",
-  "en-GB": "English (UK)",
-  "en-AU": "English (Australia)",
-  "en-CA": "English (Canada)",
-  "ko-KR": "Korean",
-  "ja-JP": "Japanese",
-  "zh-Hans": "Simplified Chinese",
-  "zh-Hant": "Traditional Chinese",
-  "zh-CN": "Simplified Chinese",
-  "zh-TW": "Traditional Chinese",
-  "fr-FR": "French",
-  "fr-CA": "French (Canada)",
+const GEMINI_LANGUAGE_NAMES: Record<GeminiTargetLocale, string> = {
+  "en-US": "English",
+  "ar-EG": "Arabic",
   "de-DE": "German",
-  "es-ES": "Spanish (Spain)",
-  "es-419": "Spanish (Latin America)",
-  "es-MX": "Spanish (Mexico)",
-  "pt-BR": "Portuguese (Brazil)",
-  "pt-PT": "Portuguese (Portugal)",
-  "it-IT": "Italian",
-  "nl-NL": "Dutch",
-  "ru-RU": "Russian",
-  "ar": "Arabic",
-  "ar-SA": "Arabic",
+  "es-MX": "Spanish",
+  "fr-FR": "French",
   "hi-IN": "Hindi",
-  "th-TH": "Thai",
-  "vi-VN": "Vietnamese",
   "id-ID": "Indonesian",
-  "ms-MY": "Malay",
-  "tr-TR": "Turkish",
-  "pl-PL": "Polish",
-  "uk-UA": "Ukrainian",
-  "cs-CZ": "Czech",
-  "el-GR": "Greek",
-  "ro-RO": "Romanian",
-  "hu-HU": "Hungarian",
-  "sv-SE": "Swedish",
-  "da-DK": "Danish",
-  "fi-FI": "Finnish",
-  "no-NO": "Norwegian",
-  "he-IL": "Hebrew",
-  "sk-SK": "Slovak",
-  "bg-BG": "Bulgarian",
-  "hr-HR": "Croatian",
-  "ca-ES": "Catalan",
+  "it-IT": "Italian",
+  "ja-JP": "Japanese",
+  "ko-KR": "Korean",
+  "pt-BR": "Portuguese",
+  "ru-RU": "Russian",
+  "ua-UA": "Ukrainian",
+  "vi-VN": "Vietnamese",
+  "zh-CN": "Chinese",
 };
 
 /**
  * Get language display name from locale code
+ * Works with Gemini-supported locales, falls back to locale code for others
  */
 function getLanguageName(locale: string): string {
-  // Try exact match first
-  if (LANGUAGE_NAMES[locale]) {
-    return LANGUAGE_NAMES[locale];
+  if (locale in GEMINI_LANGUAGE_NAMES) {
+    return GEMINI_LANGUAGE_NAMES[locale as GeminiTargetLocale];
   }
-
-  // Try base language code
-  const baseCode = locale.split("-")[0];
-  const matchingKey = Object.keys(LANGUAGE_NAMES).find(
-    (key) => key.startsWith(baseCode + "-") || key === baseCode
-  );
-
-  if (matchingKey) {
-    return LANGUAGE_NAMES[matchingKey];
-  }
-
-  // Return the locale code itself as fallback
   return locale;
 }
 
@@ -246,12 +134,13 @@ function getAspectRatioForDevice(deviceType: DeviceType): string {
 
 /**
  * Translate text in an image using Gemini API
+ * Saves the result to multiple output paths (for grouped locales)
  */
 export async function translateImage(
   sourcePath: string,
   sourceLocale: string,
   targetLocale: string,
-  outputPath: string,
+  outputPaths: string[], // Multiple paths for grouped locales
   deviceType: DeviceType,
   preserveWords?: string[]
 ): Promise<ImageTranslationResult> {
@@ -333,18 +222,20 @@ IMPORTANT INSTRUCTIONS:
       if (part.inlineData?.data) {
         const imageBuffer = Buffer.from(part.inlineData.data, "base64");
 
-        // Ensure output directory exists
-        const outputDir = path.dirname(outputPath);
-        if (!fs.existsSync(outputDir)) {
-          fs.mkdirSync(outputDir, { recursive: true });
-        }
+        // Save to all output paths (representative + grouped locales)
+        for (const outputPath of outputPaths) {
+          const outputDir = path.dirname(outputPath);
+          if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+          }
 
-        // Convert to PNG and save
-        await sharp(imageBuffer).png().toFile(outputPath);
+          // Convert to PNG and save
+          await sharp(imageBuffer).png().toFile(outputPath);
+        }
 
         return {
           success: true,
-          outputPath,
+          outputPath: outputPaths[0], // Return primary path
         };
       }
     }
@@ -364,13 +255,14 @@ IMPORTANT INSTRUCTIONS:
 
 /**
  * Batch translate images with progress tracking
+ * Each translation can save to multiple output paths (for grouped locales)
  */
 export async function translateImagesWithProgress(
   translations: Array<{
     sourcePath: string;
     sourceLocale: string;
     targetLocale: string;
-    outputPath: string;
+    outputPaths: string[]; // Multiple paths for representative + grouped locales
     deviceType: string;
     filename: string;
   }>,
@@ -406,7 +298,7 @@ export async function translateImagesWithProgress(
       translation.sourcePath,
       translation.sourceLocale,
       translation.targetLocale,
-      translation.outputPath,
+      translation.outputPaths,
       translation.deviceType as DeviceType,
       preserveWords
     );
