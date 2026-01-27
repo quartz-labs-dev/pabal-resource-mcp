@@ -55,7 +55,9 @@ export const localizeScreenshotsInputSchema = z.object({
     .boolean()
     .optional()
     .default(false)
-    .describe("Preview mode - shows what would be translated without actually translating"),
+    .describe(
+      "Preview mode - shows what would be translated without actually translating"
+    ),
   skipExisting: z
     .boolean()
     .optional()
@@ -80,7 +82,7 @@ export const localizeScreenshotsInputSchema = z.object({
     .array(z.string())
     .optional()
     .describe(
-      "Words to keep untranslated (e.g., brand names, product names). Example: [\"Pabal\", \"Pro\", \"AI\"]"
+      'Words to keep untranslated (e.g., brand names, product names). Example: ["Pabal", "Pro", "AI"]'
     ),
 });
 
@@ -207,14 +209,13 @@ function getTargetLocales(
     localesToProcess = validTargets;
   }
 
+  // Explicitly remove primary locale from targets to avoid redundancy
+  localesToProcess = localesToProcess.filter((l) => l !== primaryLocale);
+
   // Use the centralized locale preparation function
   // This handles: primary exclusion, similar locale grouping, Gemini support filtering
-  const {
-    translatableLocales,
-    localeMapping,
-    skippedLocales,
-    groupedLocales,
-  } = prepareLocalesForTranslation(localesToProcess, primaryLocale);
+  const { translatableLocales, localeMapping, skippedLocales, groupedLocales } =
+    prepareLocalesForTranslation(localesToProcess, primaryLocale);
 
   return {
     targets: translatableLocales,
@@ -394,9 +395,7 @@ export async function handleLocalizeScreenshots(
   if (screenshotNumbers) {
     // Normalize screenshotNumbers to per-device format
     const isArray = Array.isArray(screenshotNumbers);
-    const phoneNumbers = isArray
-      ? screenshotNumbers
-      : screenshotNumbers.phone;
+    const phoneNumbers = isArray ? screenshotNumbers : screenshotNumbers.phone;
     const tabletNumbers = isArray
       ? screenshotNumbers
       : screenshotNumbers.tablet;
@@ -450,9 +449,15 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
     };
   }
 
-  const phoneCount = filteredScreenshots.filter((s) => s.type === "phone").length;
-  const tabletCount = filteredScreenshots.filter((s) => s.type === "tablet").length;
-  results.push(`📸 Source screenshots: ${phoneCount} phone, ${tabletCount} tablet`);
+  const phoneCount = filteredScreenshots.filter(
+    (s) => s.type === "phone"
+  ).length;
+  const tabletCount = filteredScreenshots.filter(
+    (s) => s.type === "tablet"
+  ).length;
+  results.push(
+    `📸 Source screenshots: ${phoneCount} phone, ${tabletCount} tablet`
+  );
 
   // Step 5: Build translation tasks (includes grouped locales in outputPaths)
   const tasks = buildTranslationTasks(
@@ -552,7 +557,9 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
       results.push(`   - ${path.basename(err.path)}: ${err.error}`);
     }
     if (translationResult.errors.length > 5) {
-      results.push(`   ... and ${translationResult.errors.length - 5} more errors`);
+      results.push(
+        `   ... and ${translationResult.errors.length - 5} more errors`
+      );
     }
   }
 
@@ -561,7 +568,8 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
     results.push(`\n🔍 Validating image dimensions...`);
 
     // Collect all output paths that exist for validation
-    const resizePairs: Array<{ sourcePath: string; translatedPath: string }> = [];
+    const resizePairs: Array<{ sourcePath: string; translatedPath: string }> =
+      [];
     for (const task of tasks) {
       for (const outputPath of task.outputPaths) {
         if (fs.existsSync(outputPath)) {
@@ -576,7 +584,9 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
     const resizeResult = await batchValidateAndResize(resizePairs);
 
     if (resizeResult.resized > 0) {
-      results.push(`   🔧 Resized ${resizeResult.resized} images to match source dimensions`);
+      results.push(
+        `   🔧 Resized ${resizeResult.resized} images to match source dimensions`
+      );
     } else {
       results.push(`   ✅ All image dimensions match source`);
     }
