@@ -51,6 +51,7 @@ export interface ProductConfig {
   appStoreAppId?: string;
   packageName?: string;
   bundleId?: string;
+  isHiddenAtHomepage?: boolean;
 
   // Styling
   layoutColors?: LayoutColors;
