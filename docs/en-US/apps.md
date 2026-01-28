@@ -24,6 +24,7 @@ Guides the initial project setup workflow.
 2. Verify `.aso/pullData/products/[slug]/` exists
 3. Convert ASO data to public format
 4. Validate outputs
+5. If Privacy Policy and Terms of Use need to be created, generate them at [App Privacy Policy Generator](https://app-privacy-policy-generator.firebaseapp.com/) and save as markdown files
 
 ---
 

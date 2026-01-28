@@ -24,6 +24,7 @@
 2. `.aso/pullData/products/[slug]/` 존재 확인
 3. ASO 데이터를 퍼블릭 형식으로 변환
 4. 출력 검증
+5. 개인정보처리방침과 이용약관이 필요한 경우, [App Privacy Policy Generator](https://app-privacy-policy-generator.firebaseapp.com/)에서 생성하여 마크다운 파일로 저장
 
 ---
 

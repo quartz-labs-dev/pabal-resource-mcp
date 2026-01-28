@@ -64,8 +64,8 @@ export async function handleInitProject(
     input.slug?.length && input.slug.trim().length > 0
       ? [input.slug.trim()]
       : pullDataSlugs.length > 0
-        ? pullDataSlugs
-        : publicSlugs;
+      ? pullDataSlugs
+      : publicSlugs;
 
   const lines: string[] = [];
 
@@ -135,6 +135,12 @@ export async function handleInitProject(
   lines.push("Step 3: Verify and prepare for push (optional)");
   lines.push(
     "Use pabal-resource-mcp 'public-to-aso' with dryRun=true to validate structure and build pushData before uploading via store tooling."
+  );
+  lines.push("");
+
+  lines.push("Step 4: Create Privacy Policy and Terms of Use (if needed)");
+  lines.push(
+    "If Privacy Policy and Terms of Use need to be created, generate them at [App Privacy Policy Generator](https://app-privacy-policy-generator.firebaseapp.com/) and save as markdown files."
   );
   lines.push("");
 
