@@ -28,7 +28,11 @@ import {
   translateImagesWithProgress,
   type TranslationProgress,
 } from "./utils/localize-screenshots/gemini-image-translator.util.js";
-import { prepareLocalesForTranslation } from "./utils/localize-screenshots/locale-mapping.constants.js";
+import {
+  prepareLocalesForTranslation,
+  type LocaleMapping,
+  type GeminiTargetLocale,
+} from "./utils/localize-screenshots/locale-mapping.constants.js";
 import { batchValidateAndResize } from "./utils/localize-screenshots/image-resizer.util.js";
 
 const TOOL_NAME = "localize-screenshots";
@@ -186,10 +190,10 @@ function getTargetLocales(
   primaryLocale: string,
   requestedTargets?: string[]
 ): {
-  targets: string[];
+  targets: GeminiTargetLocale[];
   skippedLocales: string[];
   groupedLocales: string[];
-  localeMapping: Map<string, string[]>;
+  localeMapping: LocaleMapping;
 } {
   // If specific targets requested, validate and filter first
   let localesToProcess = allLocales;
@@ -228,7 +232,7 @@ function getTargetLocales(
 interface TranslationTask {
   sourcePath: string;
   sourceLocale: string;
-  targetLocale: string;
+  targetLocale: GeminiTargetLocale;
   outputPaths: string[]; // Multiple paths: representative + grouped locales
   deviceType: string;
   filename: string;
@@ -242,8 +246,8 @@ function buildTranslationTasks(
   slug: string,
   screenshots: ScreenshotInfo[],
   primaryLocale: string,
-  targetLocales: string[],
-  localeMapping: Map<string, string[]>,
+  targetLocales: GeminiTargetLocale[],
+  localeMapping: LocaleMapping,
   skipExisting: boolean
 ): TranslationTask[] {
   const tasks: TranslationTask[] = [];
@@ -487,7 +491,10 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
   if (dryRun) {
     results.push(`\n🔍 DRY RUN - No actual translations will be performed\n`);
 
-    const tasksByLocale: Record<string, typeof tasks> = {};
+    const tasksByLocale: Record<GeminiTargetLocale, typeof tasks> = {} as Record<
+      GeminiTargetLocale,
+      typeof tasks
+    >;
     for (const task of tasks) {
       if (!tasksByLocale[task.targetLocale]) {
         tasksByLocale[task.targetLocale] = [];
@@ -497,7 +504,7 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
 
     for (const [locale, localeTasks] of Object.entries(tasksByLocale)) {
       // Show grouped locales that will also receive this translation
-      const grouped = localeMapping.get(locale) || [];
+      const grouped = localeMapping.get(locale as GeminiTargetLocale) || [];
       const groupedOthers = grouped.filter((l) => l !== locale);
       const groupInfo =
         groupedOthers.length > 0 ? ` → also: ${groupedOthers.join(", ")}` : "";

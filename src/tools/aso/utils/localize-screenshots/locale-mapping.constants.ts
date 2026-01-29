@@ -36,6 +36,11 @@ export const GEMINI_TARGET_LOCALES = [
 export type GeminiTargetLocale = (typeof GEMINI_TARGET_LOCALES)[number];
 
 /**
+ * Type for locale mapping: GeminiTargetLocale → UnifiedLocales to save to
+ */
+export type LocaleMapping = Map<GeminiTargetLocale, UnifiedLocale[]>;
+
+/**
  * Mapping from Gemini locale to UnifiedLocales for saving translated images.
  *
  * Key: GeminiTargetLocale (sent to Gemini API)
@@ -128,14 +133,14 @@ export function prepareLocalesForTranslation(
   primaryLocale: string
 ): {
   translatableLocales: GeminiTargetLocale[];
-  localeMapping: Map<GeminiTargetLocale, string[]>;
+  localeMapping: LocaleMapping;
   skippedLocales: string[];
   groupedLocales: string[];
 } {
   // Remove primary locale from targets
   const targetLocales = locales.filter((l) => l !== primaryLocale);
 
-  const localeMapping = new Map<GeminiTargetLocale, string[]>();
+  const localeMapping: LocaleMapping = new Map();
   const geminiLocalesNeeded = new Set<GeminiTargetLocale>();
   const skippedLocales: string[] = [];
 
@@ -152,8 +157,9 @@ export function prepareLocalesForTranslation(
 
     // Track which UnifiedLocales to save for this Gemini locale
     const existing = localeMapping.get(geminiLocale) || [];
-    if (!existing.includes(locale)) {
-      existing.push(locale);
+    const unifiedLocale = locale as UnifiedLocale;
+    if (!existing.includes(unifiedLocale)) {
+      existing.push(unifiedLocale);
     }
     localeMapping.set(geminiLocale, existing);
   }
