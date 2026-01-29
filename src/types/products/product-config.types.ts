@@ -25,6 +25,7 @@ export interface ProductMetadata {
   marketingUrl?: string;
   termsUrl?: string;
   privacyUrl?: string;
+  youtubeUrl?: string;
   screenshots?: ProductScreenshots;
   featureGraphic?: string;
 }
