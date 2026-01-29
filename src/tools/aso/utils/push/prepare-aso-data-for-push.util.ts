@@ -18,16 +18,13 @@ import {
 
 /**
  * Prepare ASO data for pushing to stores
- * - Removes screenshots (images are handled separately)
+ * - Keeps screenshot paths (relative paths stored in aso-data.json)
  * - Sets contactWebsite (Google Play) and marketingUrl (App Store) to detail page URL
- * - Removes featureGraphic
  */
 export function prepareAsoDataForPush(
   slug: string,
   configData: AsoData
 ): Partial<AsoData> {
-  // Remove screenshot URLs/images from data (keep only structure)
-  // Note: screenshots are excluded from metadata, only images are saved separately
   const storeData: Partial<AsoData> = {};
 
   // Generate detail page URL
@@ -43,27 +40,19 @@ export function prepareAsoDataForPush(
           [googlePlayData.defaultLanguage || DEFAULT_LOCALE]: googlePlayData,
         };
 
-    type GooglePlayAsoDataWithoutScreenshots = Omit<
-      GooglePlayAsoData,
-      "screenshots"
-    >;
-    const cleanedLocales: Record<
+    const cleanedLocales: Record<UnifiedLocale, GooglePlayAsoData> = {} as Record<
       UnifiedLocale,
-      GooglePlayAsoDataWithoutScreenshots
-    > = {} as Record<UnifiedLocale, GooglePlayAsoDataWithoutScreenshots>;
+      GooglePlayAsoData
+    >;
     for (const [locale, localeData] of Object.entries(locales)) {
-      const { screenshots, ...rest } = localeData;
+      // Keep screenshots with relative paths
       cleanedLocales[locale as UnifiedLocale] = {
-        ...rest,
-        featureGraphic: undefined, // Images excluded
+        ...localeData,
       };
     }
 
     // Convert unified locale keys to Google Play locale keys
-    const convertedLocales: Record<
-      string,
-      GooglePlayAsoDataWithoutScreenshots
-    > = {};
+    const convertedLocales: Record<string, GooglePlayAsoData> = {};
     for (const [unifiedLocale, localeData] of Object.entries(cleanedLocales)) {
       const googlePlayLocale = unifiedToGooglePlay(
         unifiedLocale as UnifiedLocale
@@ -77,8 +66,7 @@ export function prepareAsoDataForPush(
       }
     }
 
-    // screenshots is excluded from metadata (images saved separately)
-    // saveAsoToAsoDir accepts Partial<AsoData> so this is safe
+    // screenshots are now stored with relative paths in aso-data.json
     const googleDefaultLocale = isGooglePlayMultilingual(googlePlayData)
       ? googlePlayData.defaultLocale || DEFAULT_LOCALE
       : googlePlayData.defaultLanguage || DEFAULT_LOCALE;
@@ -86,7 +74,7 @@ export function prepareAsoDataForPush(
       unifiedToGooglePlay(googleDefaultLocale as UnifiedLocale) ||
       googleDefaultLocale;
     storeData.googlePlay = {
-      locales: convertedLocales as unknown as Record<string, GooglePlayAsoData>,
+      locales: convertedLocales,
       defaultLocale: convertedDefaultLocale,
       // App-level contact information (from multilingual data)
       contactEmail: isGooglePlayMultilingual(googlePlayData)
@@ -105,24 +93,19 @@ export function prepareAsoDataForPush(
       ? appStoreData.locales
       : { [appStoreData.locale || DEFAULT_LOCALE]: appStoreData };
 
-    type AppStoreAsoDataWithoutScreenshots = Omit<
-      AppStoreAsoData,
-      "screenshots"
-    >;
-    const cleanedLocales: Record<
+    const cleanedLocales: Record<UnifiedLocale, AppStoreAsoData> = {} as Record<
       UnifiedLocale,
-      AppStoreAsoDataWithoutScreenshots
-    > = {} as Record<UnifiedLocale, AppStoreAsoDataWithoutScreenshots>;
+      AppStoreAsoData
+    >;
     for (const [locale, localeData] of Object.entries(locales)) {
-      const { screenshots, ...rest } = localeData;
+      // Keep screenshots with relative paths
       cleanedLocales[locale as UnifiedLocale] = {
-        ...rest,
+        ...localeData,
       };
     }
 
     // Convert unified locale keys to App Store locale keys
-    const convertedLocales: Record<string, AppStoreAsoDataWithoutScreenshots> =
-      {};
+    const convertedLocales: Record<string, AppStoreAsoData> = {};
     for (const [unifiedLocale, localeData] of Object.entries(cleanedLocales)) {
       const appStoreLocale = unifiedToAppStore(unifiedLocale as UnifiedLocale);
       if (appStoreLocale !== null) {
@@ -134,8 +117,7 @@ export function prepareAsoDataForPush(
       }
     }
 
-    // screenshots is excluded from metadata (images saved separately)
-    // saveAsoToAsoDir accepts Partial<AsoData> so this is safe
+    // screenshots are now stored with relative paths in aso-data.json
     const appStoreDefaultLocale = isAppStoreMultilingual(appStoreData)
       ? appStoreData.defaultLocale || DEFAULT_LOCALE
       : appStoreData.locale || DEFAULT_LOCALE;
@@ -143,7 +125,7 @@ export function prepareAsoDataForPush(
       unifiedToAppStore(appStoreDefaultLocale as UnifiedLocale) ||
       appStoreDefaultLocale;
     storeData.appStore = {
-      locales: convertedLocales as unknown as Record<string, AppStoreAsoData>,
+      locales: convertedLocales,
       defaultLocale: convertedDefaultLocale,
       // App-level contact information (from multilingual data)
       contactEmail: isAppStoreMultilingual(appStoreData)

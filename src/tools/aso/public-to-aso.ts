@@ -67,7 +67,7 @@ const jsonSchema = toJsonSchema(publicToAsoInputSchema, {
 const inputSchema = jsonSchema.definitions?.PublicToAsoInput || jsonSchema;
 
 /**
- * Download/copy screenshots to pushData directory
+ * Download/copy screenshots to pushData directory and update asoData with relative paths
  */
 async function downloadScreenshotsToAsoDir(
   slug: string,
@@ -121,6 +121,13 @@ async function downloadScreenshotsToAsoDir(
         googlePlayLocale
       );
 
+      // Store relative paths for each device type
+      const relativePaths: {
+        phone: string[];
+        tablet7: string[];
+        tablet10: string[];
+      } = { phone: [], tablet7: [], tablet10: [] };
+
       const phoneScreenshots = localeData.screenshots?.phone;
       if (phoneScreenshots && phoneScreenshots.length > 0) {
         for (let i = 0; i < phoneScreenshots.length; i++) {
@@ -129,9 +136,13 @@ async function downloadScreenshotsToAsoDir(
           const outputPath = path.join(asoDir, filename);
           if (isLocalAssetPath(url)) {
             copyLocalAssetToAsoDir(url, outputPath);
-            continue;
+          } else {
+            await downloadImage(url, outputPath);
           }
-          await downloadImage(url, outputPath);
+          // Store relative path
+          relativePaths.phone.push(
+            `google-play/screenshots/${googlePlayLocale}/${filename}`
+          );
         }
       }
 
@@ -144,9 +155,13 @@ async function downloadScreenshotsToAsoDir(
           const outputPath = path.join(asoDir, filename);
           if (isLocalAssetPath(url)) {
             copyLocalAssetToAsoDir(url, outputPath);
-            continue;
+          } else {
+            await downloadImage(url, outputPath);
           }
-          await downloadImage(url, outputPath);
+          // Store relative path
+          relativePaths.tablet7.push(
+            `google-play/screenshots/${googlePlayLocale}/${filename}`
+          );
         }
       }
 
@@ -159,9 +174,13 @@ async function downloadScreenshotsToAsoDir(
           const outputPath = path.join(asoDir, filename);
           if (isLocalAssetPath(url)) {
             copyLocalAssetToAsoDir(url, outputPath);
-            continue;
+          } else {
+            await downloadImage(url, outputPath);
           }
-          await downloadImage(url, outputPath);
+          // Store relative path
+          relativePaths.tablet10.push(
+            `google-play/screenshots/${googlePlayLocale}/${filename}`
+          );
         }
       }
 
@@ -174,13 +193,14 @@ async function downloadScreenshotsToAsoDir(
           const outputPath = path.join(asoDir, filename);
           if (isLocalAssetPath(url)) {
             copyLocalAssetToAsoDir(url, outputPath);
-            continue;
+          } else {
+            await downloadImage(url, outputPath);
           }
-          await downloadImage(url, outputPath);
         }
       }
 
       // Download Feature Graphic
+      let featureGraphicPath: string | undefined;
       if (localeData.featureGraphic) {
         const featureGraphicUrl = localeData.featureGraphic;
         const outputPath = path.join(asoDir, "feature-graphic.png");
@@ -189,8 +209,22 @@ async function downloadScreenshotsToAsoDir(
         } else {
           await downloadImage(featureGraphicUrl, outputPath);
         }
+        featureGraphicPath = `google-play/screenshots/${googlePlayLocale}/feature-graphic.png`;
+      }
+
+      // Update localeData with relative paths
+      localeData.screenshots = {
+        phone: relativePaths.phone,
+        tablet7: relativePaths.tablet7,
+        tablet10: relativePaths.tablet10,
+      };
+      if (featureGraphicPath) {
+        localeData.featureGraphic = featureGraphicPath;
       }
     }
+
+    // Update asoData with modified googlePlayData
+    asoData.googlePlay = googlePlayData;
   }
 
   // Download App Store screenshots (all locales)
@@ -228,6 +262,12 @@ async function downloadScreenshotsToAsoDir(
         appStoreLocale
       );
 
+      // Store relative paths for each device type
+      const relativePaths: {
+        iphone65: string[];
+        ipadPro129: string[];
+      } = { iphone65: [], ipadPro129: [] };
+
       // Download iPhone screenshots
       const iphone65Screenshots = localeData.screenshots?.iphone65;
       if (iphone65Screenshots && iphone65Screenshots.length > 0) {
@@ -237,9 +277,13 @@ async function downloadScreenshotsToAsoDir(
           const outputPath = path.join(asoDir, filename);
           if (isLocalAssetPath(url)) {
             copyLocalAssetToAsoDir(url, outputPath);
-            continue;
+          } else {
+            await downloadImage(url, outputPath);
           }
-          await downloadImage(url, outputPath);
+          // Store relative path
+          relativePaths.iphone65.push(
+            `app-store/screenshots/${appStoreLocale}/${filename}`
+          );
         }
       }
 
@@ -252,12 +296,25 @@ async function downloadScreenshotsToAsoDir(
           const outputPath = path.join(asoDir, filename);
           if (isLocalAssetPath(url)) {
             copyLocalAssetToAsoDir(url, outputPath);
-            continue;
+          } else {
+            await downloadImage(url, outputPath);
           }
-          await downloadImage(url, outputPath);
+          // Store relative path
+          relativePaths.ipadPro129.push(
+            `app-store/screenshots/${appStoreLocale}/${filename}`
+          );
         }
       }
+
+      // Update localeData with relative paths
+      localeData.screenshots = {
+        iphone65: relativePaths.iphone65,
+        ipadPro129: relativePaths.ipadPro129,
+      };
     }
+
+    // Update asoData with modified appStoreData
+    asoData.appStore = appStoreData;
   }
 }
 
