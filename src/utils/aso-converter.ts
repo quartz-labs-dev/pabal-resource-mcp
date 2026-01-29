@@ -214,7 +214,6 @@ export function loadAsoFromConfig(slug: string): AsoData {
             phone: localeScreenshots.phone || [],
             tablet: localeScreenshots.tablet,
           },
-          contactEmail: metadata.contactEmail,
         };
       }
 
@@ -231,6 +230,9 @@ export function loadAsoFromConfig(slug: string): AsoData {
         asoData.googlePlay = {
           locales: googlePlayLocales,
           defaultLocale: resolvedDefault,
+          // App-level contact information
+          contactEmail: metadata.contactEmail,
+          contactWebsite: metadata.supportUrl,
         };
       }
     }
@@ -292,9 +294,6 @@ export function loadAsoFromConfig(slug: string): AsoData {
           promotionalText: undefined,
           bundleId: config.bundleId!,
           locale,
-          supportUrl: metadata.supportUrl,
-          marketingUrl: metadata.marketingUrl,
-          privacyPolicyUrl: metadata.privacyUrl,
           screenshots: {
             // 폰 스크린샷을 iphone65로 매핑
             iphone65: localeScreenshots.phone || [],
@@ -318,6 +317,12 @@ export function loadAsoFromConfig(slug: string): AsoData {
         asoData.appStore = {
           locales: appStoreLocales,
           defaultLocale: resolvedDefault,
+          // App-level contact information
+          contactEmail: metadata.contactEmail,
+          supportUrl: metadata.supportUrl,
+          marketingUrl: metadata.marketingUrl,
+          privacyPolicyUrl: metadata.privacyUrl,
+          termsUrl: metadata.termsUrl,
         };
       }
     }

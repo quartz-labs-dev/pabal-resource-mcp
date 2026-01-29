@@ -49,7 +49,6 @@ export function prepareAsoDataForPush(
       cleanedLocales[locale as UnifiedLocale] = {
         ...rest,
         featureGraphic: undefined, // Images excluded
-        contactWebsite: detailPageUrl, // Set detail page URL
       };
     }
 
@@ -82,6 +81,11 @@ export function prepareAsoDataForPush(
     storeData.googlePlay = {
       locales: convertedLocales as unknown as Record<string, GooglePlayAsoData>,
       defaultLocale: convertedDefaultLocale,
+      // App-level contact information (from multilingual data)
+      contactEmail: isGooglePlayMultilingual(googlePlayData)
+        ? googlePlayData.contactEmail
+        : undefined,
+      contactWebsite: detailPageUrl, // Set to detail page URL
     };
   }
 
@@ -103,7 +107,6 @@ export function prepareAsoDataForPush(
       const { screenshots, ...rest } = localeData;
       cleanedLocales[locale as UnifiedLocale] = {
         ...rest,
-        marketingUrl: detailPageUrl, // Set detail page URL
       };
     }
 
@@ -132,6 +135,20 @@ export function prepareAsoDataForPush(
     storeData.appStore = {
       locales: convertedLocales as unknown as Record<string, AppStoreAsoData>,
       defaultLocale: convertedDefaultLocale,
+      // App-level contact information (from multilingual data)
+      contactEmail: isAppStoreMultilingual(appStoreData)
+        ? appStoreData.contactEmail
+        : undefined,
+      supportUrl: isAppStoreMultilingual(appStoreData)
+        ? appStoreData.supportUrl
+        : undefined,
+      marketingUrl: detailPageUrl, // Set to detail page URL
+      privacyPolicyUrl: isAppStoreMultilingual(appStoreData)
+        ? appStoreData.privacyPolicyUrl
+        : undefined,
+      termsUrl: isAppStoreMultilingual(appStoreData)
+        ? appStoreData.termsUrl
+        : undefined,
     };
   }
 

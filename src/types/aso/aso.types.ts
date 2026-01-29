@@ -188,6 +188,7 @@ export interface AppStoreAsoData {
   supportUrl?: AppStoreVersionLocalization["supportUrl"];
   marketingUrl?: AppStoreVersionLocalization["marketingUrl"];
   privacyPolicyUrl?: AppStoreInfoLocalization["privacyPolicyUrl"];
+  termsUrl?: string; // Terms of Use URL
 
   // Other
   bundleId: string; // Bundle ID (e.g., com.quartz.pixeltimer)
@@ -203,6 +204,9 @@ export interface GooglePlayMultilingualAsoData {
     [locale: string]: GooglePlayAsoData;
   };
   defaultLocale?: string;
+  // App-level contact information (shared across all locales)
+  contactEmail?: string;
+  contactWebsite?: string;
 }
 
 /**
@@ -213,6 +217,12 @@ export interface AppStoreMultilingualAsoData {
     [locale: string]: AppStoreAsoData;
   };
   defaultLocale?: string;
+  // App-level contact information (shared across all locales)
+  contactEmail?: string;
+  supportUrl?: string;
+  marketingUrl?: string;
+  privacyPolicyUrl?: string;
+  termsUrl?: string;
 }
 
 /**
