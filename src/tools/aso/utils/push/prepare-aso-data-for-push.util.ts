@@ -1,5 +1,12 @@
-import type { AsoData, GooglePlayAsoData, AppStoreAsoData } from "../../../../types/aso/index.js";
-import { isGooglePlayMultilingual, isAppStoreMultilingual } from "../../../../types/aso/index.js";
+import type {
+  AsoData,
+  GooglePlayAsoData,
+  AppStoreAsoData,
+} from "../../../../types/aso/index.js";
+import {
+  isGooglePlayMultilingual,
+  isAppStoreMultilingual,
+} from "../../../../types/aso/index.js";
 import {
   DEFAULT_LOCALE,
   type UnifiedLocale,
@@ -86,6 +93,9 @@ export function prepareAsoDataForPush(
         ? googlePlayData.contactEmail
         : undefined,
       contactWebsite: detailPageUrl, // Set to detail page URL
+      youtubeUrl: isGooglePlayMultilingual(googlePlayData)
+        ? googlePlayData.youtubeUrl
+        : (googlePlayData as GooglePlayAsoData).video || undefined,
     };
   }
 

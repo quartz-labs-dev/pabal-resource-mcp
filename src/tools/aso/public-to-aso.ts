@@ -100,10 +100,14 @@ async function downloadScreenshotsToAsoDir(
 
       // Skip locales with no screenshots
       const hasAnyScreenshots =
-        (localeData.screenshots?.phone && localeData.screenshots.phone.length > 0) ||
-        (localeData.screenshots?.tablet7 && localeData.screenshots.tablet7.length > 0) ||
-        (localeData.screenshots?.tablet10 && localeData.screenshots.tablet10.length > 0) ||
-        (localeData.screenshots?.tablet && localeData.screenshots.tablet.length > 0) ||
+        (localeData.screenshots?.phone &&
+          localeData.screenshots.phone.length > 0) ||
+        (localeData.screenshots?.tablet7 &&
+          localeData.screenshots.tablet7.length > 0) ||
+        (localeData.screenshots?.tablet10 &&
+          localeData.screenshots.tablet10.length > 0) ||
+        (localeData.screenshots?.tablet &&
+          localeData.screenshots.tablet.length > 0) ||
         localeData.featureGraphic;
 
       if (!hasAnyScreenshots) {
@@ -208,8 +212,10 @@ async function downloadScreenshotsToAsoDir(
 
       // Skip locales with no screenshots
       const hasAnyScreenshots =
-        (localeData.screenshots?.iphone65 && localeData.screenshots.iphone65.length > 0) ||
-        (localeData.screenshots?.ipadPro129 && localeData.screenshots.ipadPro129.length > 0);
+        (localeData.screenshots?.iphone65 &&
+          localeData.screenshots.iphone65.length > 0) ||
+        (localeData.screenshots?.ipadPro129 &&
+          localeData.screenshots.ipadPro129.length > 0);
 
       if (!hasAnyScreenshots) {
         continue; // Skip locales without screenshots
@@ -441,6 +447,10 @@ export async function handlePublicToAso(
   let responseText = `✅ ${slug} pushData files prepared from config.json + locales/ (images + metadata synced)\n\n`;
   if (localeCounts.googlePlay) {
     responseText += `Google Play: ${localeCounts.googlePlay} locale(s)\n`;
+    const gpData = storeData.googlePlay;
+    if (gpData && isGooglePlayMultilingual(gpData) && gpData.youtubeUrl) {
+      responseText += `Google Play YouTube URL: ${gpData.youtubeUrl}\n`;
+    }
   }
   if (localeCounts.appStore) {
     responseText += `App Store: ${localeCounts.appStore} locale(s)\n`;
