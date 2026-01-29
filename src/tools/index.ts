@@ -12,22 +12,22 @@ import {
   asoToPublicTool,
   asoToPublicInputSchema,
   handleAsoToPublic,
-} from "./aso/pull.js";
+} from "./aso/aso-to-public.js";
 import {
   publicToAsoTool,
   publicToAsoInputSchema,
   handlePublicToAso,
-} from "./aso/push.js";
+} from "./aso/public-to-aso.js";
 import {
   improvePublicTool,
   improvePublicInputSchema,
   handleImprovePublic,
-} from "./aso/improve.js";
+} from "./aso/improve-public.js";
 import {
   validateAsoTool,
   validateAsoInputSchema,
   handleValidateAso,
-} from "./aso/validate.js";
+} from "./aso/validate-aso.js";
 import {
   keywordResearchTool,
   keywordResearchInputSchema,
