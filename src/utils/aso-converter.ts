@@ -233,6 +233,7 @@ export function loadAsoFromConfig(slug: string): AsoData {
           // App-level contact information
           contactEmail: metadata.contactEmail,
           contactWebsite: metadata.supportUrl,
+          youtubeUrl: metadata.youtubeUrl,
         };
       }
     }

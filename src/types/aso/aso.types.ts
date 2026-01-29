@@ -207,6 +207,7 @@ export interface GooglePlayMultilingualAsoData {
   // App-level contact information (shared across all locales)
   contactEmail?: string;
   contactWebsite?: string;
+  youtubeUrl?: string;
 }
 
 /**
