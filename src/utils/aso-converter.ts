@@ -187,14 +187,21 @@ export function loadAsoFromConfig(slug: string): AsoData {
           );
         }
 
-        // Add locale to screenshot paths
-        const localeScreenshots: typeof screenshots = {
+        // Check if screenshots exist for this locale
+        const screenshotsDir = path.join(productsDir, slug, "screenshots", locale);
+        const hasScreenshots = fs.existsSync(screenshotsDir);
+
+        // Add locale to screenshot paths only if screenshots directory exists
+        const localeScreenshots: typeof screenshots = hasScreenshots ? {
           phone: screenshots.phone?.map((p) =>
-            p.replace("/screenshots/", `/screenshots/${locale}/`)
+            p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
           ),
           tablet: screenshots.tablet?.map((p) =>
-            p.replace("/screenshots/", `/screenshots/${locale}/`)
+            p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
           ),
+        } : {
+          phone: undefined,
+          tablet: undefined,
         };
 
         googlePlayLocales[locale] = {
@@ -258,14 +265,21 @@ export function loadAsoFromConfig(slug: string): AsoData {
           );
         }
 
-        // Add locale to screenshot paths
-        const localeScreenshots: typeof screenshots = {
+        // Check if screenshots exist for this locale
+        const screenshotsDir = path.join(productsDir, slug, "screenshots", locale);
+        const hasScreenshots = fs.existsSync(screenshotsDir);
+
+        // Add locale to screenshot paths only if screenshots directory exists
+        const localeScreenshots: typeof screenshots = hasScreenshots ? {
           phone: screenshots.phone?.map((p) =>
-            p.replace("/screenshots/", `/screenshots/${locale}/`)
+            p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
           ),
           tablet: screenshots.tablet?.map((p) =>
-            p.replace("/screenshots/", `/screenshots/${locale}/`)
+            p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
           ),
+        } : {
+          phone: undefined,
+          tablet: undefined,
         };
 
         appStoreLocales[locale] = {

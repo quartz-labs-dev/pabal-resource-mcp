@@ -97,6 +97,19 @@ async function downloadScreenshotsToAsoDir(
         continue; // Skip unsupported locales
       }
       const localeData = googlePlayData.locales[unifiedLocale];
+
+      // Skip locales with no screenshots
+      const hasAnyScreenshots =
+        (localeData.screenshots?.phone && localeData.screenshots.phone.length > 0) ||
+        (localeData.screenshots?.tablet7 && localeData.screenshots.tablet7.length > 0) ||
+        (localeData.screenshots?.tablet10 && localeData.screenshots.tablet10.length > 0) ||
+        (localeData.screenshots?.tablet && localeData.screenshots.tablet.length > 0) ||
+        localeData.featureGraphic;
+
+      if (!hasAnyScreenshots) {
+        continue; // Skip locales without screenshots
+      }
+
       const asoDir = path.join(
         productStoreRoot,
         "google-play",
@@ -192,6 +205,16 @@ async function downloadScreenshotsToAsoDir(
         continue; // Skip unsupported locales
       }
       const localeData = appStoreData.locales[unifiedLocale];
+
+      // Skip locales with no screenshots
+      const hasAnyScreenshots =
+        (localeData.screenshots?.iphone65 && localeData.screenshots.iphone65.length > 0) ||
+        (localeData.screenshots?.ipadPro129 && localeData.screenshots.ipadPro129.length > 0);
+
+      if (!hasAnyScreenshots) {
+        continue; // Skip locales without screenshots
+      }
+
       const asoDir = path.join(
         productStoreRoot,
         "app-store",
