@@ -67,7 +67,62 @@ const jsonSchema = toJsonSchema(publicToAsoInputSchema, {
 const inputSchema = jsonSchema.definitions?.PublicToAsoInput || jsonSchema;
 
 /**
+ * Download/copy a single screenshot and verify it exists
+ * Returns relative path if successful, null if failed
+ */
+async function downloadAndVerifyScreenshot(
+  url: string,
+  outputPath: string,
+  relativePath: string
+): Promise<string | null> {
+  try {
+    if (isLocalAssetPath(url)) {
+      copyLocalAssetToAsoDir(url, outputPath);
+    } else {
+      await downloadImage(url, outputPath);
+    }
+    // Verify file exists after download
+    if (fs.existsSync(outputPath)) {
+      return relativePath;
+    }
+    return null;
+  } catch (error) {
+    console.error(`Failed to download screenshot: ${url}`, error);
+    return null;
+  }
+}
+
+/**
+ * Download/copy screenshot array and return relative paths for successfully downloaded files
+ */
+async function downloadScreenshotArray(
+  screenshots: string[] | undefined,
+  asoDir: string,
+  relativeDir: string,
+  prefix: string
+): Promise<string[]> {
+  if (!screenshots || screenshots.length === 0) {
+    return [];
+  }
+
+  const relativePaths: string[] = [];
+  for (let i = 0; i < screenshots.length; i++) {
+    const url = screenshots[i];
+    const filename = `${prefix}-${i + 1}.png`;
+    const outputPath = path.join(asoDir, filename);
+    const relativePath = `${relativeDir}/${filename}`;
+
+    const result = await downloadAndVerifyScreenshot(url, outputPath, relativePath);
+    if (result) {
+      relativePaths.push(result);
+    }
+  }
+  return relativePaths;
+}
+
+/**
  * Download/copy screenshots to pushData directory and update asoData with relative paths
+ * Only includes screenshots that were successfully downloaded and verified
  */
 async function downloadScreenshotsToAsoDir(
   slug: string,
@@ -98,128 +153,64 @@ async function downloadScreenshotsToAsoDir(
       }
       const localeData = googlePlayData.locales[unifiedLocale];
 
-      // Skip locales with no screenshots
-      const hasAnyScreenshots =
-        (localeData.screenshots?.phone &&
-          localeData.screenshots.phone.length > 0) ||
-        (localeData.screenshots?.tablet7 &&
-          localeData.screenshots.tablet7.length > 0) ||
-        (localeData.screenshots?.tablet10 &&
-          localeData.screenshots.tablet10.length > 0) ||
-        (localeData.screenshots?.tablet &&
-          localeData.screenshots.tablet.length > 0) ||
-        localeData.featureGraphic;
-
-      if (!hasAnyScreenshots) {
-        continue; // Skip locales without screenshots
-      }
-
       const asoDir = path.join(
         productStoreRoot,
         "google-play",
         "screenshots",
         googlePlayLocale
       );
+      const relativeDir = `google-play/screenshots/${googlePlayLocale}`;
 
-      // Store relative paths for each device type
-      const relativePaths: {
-        phone: string[];
-        tablet7: string[];
-        tablet10: string[];
-      } = { phone: [], tablet7: [], tablet10: [] };
+      // Download screenshots and get relative paths for successfully downloaded files
+      const phonePaths = await downloadScreenshotArray(
+        localeData.screenshots?.phone,
+        asoDir,
+        relativeDir,
+        "phone"
+      );
 
-      const phoneScreenshots = localeData.screenshots?.phone;
-      if (phoneScreenshots && phoneScreenshots.length > 0) {
-        for (let i = 0; i < phoneScreenshots.length; i++) {
-          const url = phoneScreenshots[i];
-          const filename = `phone-${i + 1}.png`;
-          const outputPath = path.join(asoDir, filename);
-          if (isLocalAssetPath(url)) {
-            copyLocalAssetToAsoDir(url, outputPath);
-          } else {
-            await downloadImage(url, outputPath);
-          }
-          // Store relative path
-          relativePaths.phone.push(
-            `google-play/screenshots/${googlePlayLocale}/${filename}`
-          );
-        }
-      }
+      const tablet7Paths = await downloadScreenshotArray(
+        localeData.screenshots?.tablet7,
+        asoDir,
+        relativeDir,
+        "tablet7"
+      );
 
-      // Download 7-inch tablet screenshots
-      const tablet7Screenshots = localeData.screenshots?.tablet7;
-      if (tablet7Screenshots && tablet7Screenshots.length > 0) {
-        for (let i = 0; i < tablet7Screenshots.length; i++) {
-          const url = tablet7Screenshots[i];
-          const filename = `tablet7-${i + 1}.png`;
-          const outputPath = path.join(asoDir, filename);
-          if (isLocalAssetPath(url)) {
-            copyLocalAssetToAsoDir(url, outputPath);
-          } else {
-            await downloadImage(url, outputPath);
-          }
-          // Store relative path
-          relativePaths.tablet7.push(
-            `google-play/screenshots/${googlePlayLocale}/${filename}`
-          );
-        }
-      }
+      const tablet10Paths = await downloadScreenshotArray(
+        localeData.screenshots?.tablet10,
+        asoDir,
+        relativeDir,
+        "tablet10"
+      );
 
-      // Download 10-inch tablet screenshots
-      const tablet10Screenshots = localeData.screenshots?.tablet10;
-      if (tablet10Screenshots && tablet10Screenshots.length > 0) {
-        for (let i = 0; i < tablet10Screenshots.length; i++) {
-          const url = tablet10Screenshots[i];
-          const filename = `tablet10-${i + 1}.png`;
-          const outputPath = path.join(asoDir, filename);
-          if (isLocalAssetPath(url)) {
-            copyLocalAssetToAsoDir(url, outputPath);
-          } else {
-            await downloadImage(url, outputPath);
-          }
-          // Store relative path
-          relativePaths.tablet10.push(
-            `google-play/screenshots/${googlePlayLocale}/${filename}`
-          );
-        }
-      }
-
-      // Legacy support: Download old tablet screenshots (if exists)
-      const tabletScreenshots = localeData.screenshots?.tablet;
-      if (tabletScreenshots && tabletScreenshots.length > 0) {
-        for (let i = 0; i < tabletScreenshots.length; i++) {
-          const url = tabletScreenshots[i];
-          const filename = `tablet-${i + 1}.png`;
-          const outputPath = path.join(asoDir, filename);
-          if (isLocalAssetPath(url)) {
-            copyLocalAssetToAsoDir(url, outputPath);
-          } else {
-            await downloadImage(url, outputPath);
-          }
-        }
-      }
-
-      // Download Feature Graphic
+      // Download Feature Graphic and verify
       let featureGraphicPath: string | undefined;
       if (localeData.featureGraphic) {
-        const featureGraphicUrl = localeData.featureGraphic;
         const outputPath = path.join(asoDir, "feature-graphic.png");
-        if (isLocalAssetPath(featureGraphicUrl)) {
-          copyLocalAssetToAsoDir(featureGraphicUrl, outputPath);
-        } else {
-          await downloadImage(featureGraphicUrl, outputPath);
+        const relativePath = `${relativeDir}/feature-graphic.png`;
+        const result = await downloadAndVerifyScreenshot(
+          localeData.featureGraphic,
+          outputPath,
+          relativePath
+        );
+        if (result) {
+          featureGraphicPath = result;
         }
-        featureGraphicPath = `google-play/screenshots/${googlePlayLocale}/feature-graphic.png`;
       }
 
-      // Update localeData with relative paths
-      localeData.screenshots = {
-        phone: relativePaths.phone,
-        tablet7: relativePaths.tablet7,
-        tablet10: relativePaths.tablet10,
-      };
-      if (featureGraphicPath) {
-        localeData.featureGraphic = featureGraphicPath;
+      // Update localeData with relative paths (only for files that actually exist)
+      const hasDownloadedScreenshots =
+        phonePaths.length > 0 || tablet7Paths.length > 0 || tablet10Paths.length > 0;
+
+      if (hasDownloadedScreenshots || featureGraphicPath) {
+        localeData.screenshots = {
+          phone: phonePaths,
+          tablet7: tablet7Paths,
+          tablet10: tablet10Paths,
+        };
+        if (featureGraphicPath) {
+          localeData.featureGraphic = featureGraphicPath;
+        }
       }
     }
 
@@ -244,73 +235,38 @@ async function downloadScreenshotsToAsoDir(
       }
       const localeData = appStoreData.locales[unifiedLocale];
 
-      // Skip locales with no screenshots
-      const hasAnyScreenshots =
-        (localeData.screenshots?.iphone65 &&
-          localeData.screenshots.iphone65.length > 0) ||
-        (localeData.screenshots?.ipadPro129 &&
-          localeData.screenshots.ipadPro129.length > 0);
-
-      if (!hasAnyScreenshots) {
-        continue; // Skip locales without screenshots
-      }
-
       const asoDir = path.join(
         productStoreRoot,
         "app-store",
         "screenshots",
         appStoreLocale
       );
+      const relativeDir = `app-store/screenshots/${appStoreLocale}`;
 
-      // Store relative paths for each device type
-      const relativePaths: {
-        iphone65: string[];
-        ipadPro129: string[];
-      } = { iphone65: [], ipadPro129: [] };
+      // Download screenshots and get relative paths for successfully downloaded files
+      const iphone65Paths = await downloadScreenshotArray(
+        localeData.screenshots?.iphone65,
+        asoDir,
+        relativeDir,
+        "iphone65"
+      );
 
-      // Download iPhone screenshots
-      const iphone65Screenshots = localeData.screenshots?.iphone65;
-      if (iphone65Screenshots && iphone65Screenshots.length > 0) {
-        for (let i = 0; i < iphone65Screenshots.length; i++) {
-          const url = iphone65Screenshots[i];
-          const filename = `iphone65-${i + 1}.png`;
-          const outputPath = path.join(asoDir, filename);
-          if (isLocalAssetPath(url)) {
-            copyLocalAssetToAsoDir(url, outputPath);
-          } else {
-            await downloadImage(url, outputPath);
-          }
-          // Store relative path
-          relativePaths.iphone65.push(
-            `app-store/screenshots/${appStoreLocale}/${filename}`
-          );
-        }
+      const ipadPro129Paths = await downloadScreenshotArray(
+        localeData.screenshots?.ipadPro129,
+        asoDir,
+        relativeDir,
+        "ipadPro129"
+      );
+
+      // Update localeData with relative paths (only for files that actually exist)
+      const hasDownloadedScreenshots = iphone65Paths.length > 0 || ipadPro129Paths.length > 0;
+
+      if (hasDownloadedScreenshots) {
+        localeData.screenshots = {
+          iphone65: iphone65Paths,
+          ipadPro129: ipadPro129Paths,
+        };
       }
-
-      // Download iPad screenshots
-      const ipadPro129Screenshots = localeData.screenshots?.ipadPro129;
-      if (ipadPro129Screenshots && ipadPro129Screenshots.length > 0) {
-        for (let i = 0; i < ipadPro129Screenshots.length; i++) {
-          const url = ipadPro129Screenshots[i];
-          const filename = `ipadPro129-${i + 1}.png`;
-          const outputPath = path.join(asoDir, filename);
-          if (isLocalAssetPath(url)) {
-            copyLocalAssetToAsoDir(url, outputPath);
-          } else {
-            await downloadImage(url, outputPath);
-          }
-          // Store relative path
-          relativePaths.ipadPro129.push(
-            `app-store/screenshots/${appStoreLocale}/${filename}`
-          );
-        }
-      }
-
-      // Update localeData with relative paths
-      localeData.screenshots = {
-        iphone65: relativePaths.iphone65,
-        ipadPro129: relativePaths.ipadPro129,
-      };
     }
 
     // Update asoData with modified appStoreData
