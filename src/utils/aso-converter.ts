@@ -187,21 +187,21 @@ export function loadAsoFromConfig(slug: string): AsoData {
           );
         }
 
-        // Check if screenshots exist for this locale
+        // Check if screenshots exist for this locale - verify each type separately
         const screenshotsDir = path.join(productsDir, slug, "screenshots", locale);
-        const hasScreenshots = fs.existsSync(screenshotsDir);
+        const phoneDir = path.join(screenshotsDir, "phone");
+        const tabletDir = path.join(screenshotsDir, "tablet");
+        const hasPhoneScreenshots = fs.existsSync(phoneDir);
+        const hasTabletScreenshots = fs.existsSync(tabletDir);
 
-        // Add locale to screenshot paths only if screenshots directory exists
-        const localeScreenshots: typeof screenshots = hasScreenshots ? {
-          phone: screenshots.phone?.map((p) =>
+        // Add locale to screenshot paths only if the specific type directory exists
+        const localeScreenshots: typeof screenshots = {
+          phone: hasPhoneScreenshots ? screenshots.phone?.map((p) =>
             p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
-          ),
-          tablet: screenshots.tablet?.map((p) =>
+          ) : undefined,
+          tablet: hasTabletScreenshots ? screenshots.tablet?.map((p) =>
             p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
-          ),
-        } : {
-          phone: undefined,
-          tablet: undefined,
+          ) : undefined,
         };
 
         googlePlayLocales[locale] = {
@@ -268,21 +268,21 @@ export function loadAsoFromConfig(slug: string): AsoData {
           );
         }
 
-        // Check if screenshots exist for this locale
+        // Check if screenshots exist for this locale - verify each type separately
         const screenshotsDir = path.join(productsDir, slug, "screenshots", locale);
-        const hasScreenshots = fs.existsSync(screenshotsDir);
+        const phoneDir = path.join(screenshotsDir, "phone");
+        const tabletDir = path.join(screenshotsDir, "tablet");
+        const hasPhoneScreenshots = fs.existsSync(phoneDir);
+        const hasTabletScreenshots = fs.existsSync(tabletDir);
 
-        // Add locale to screenshot paths only if screenshots directory exists
-        const localeScreenshots: typeof screenshots = hasScreenshots ? {
-          phone: screenshots.phone?.map((p) =>
+        // Add locale to screenshot paths only if the specific type directory exists
+        const localeScreenshots: typeof screenshots = {
+          phone: hasPhoneScreenshots ? screenshots.phone?.map((p) =>
             p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
-          ),
-          tablet: screenshots.tablet?.map((p) =>
+          ) : undefined,
+          tablet: hasTabletScreenshots ? screenshots.tablet?.map((p) =>
             p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
-          ),
-        } : {
-          phone: undefined,
-          tablet: undefined,
+          ) : undefined,
         };
 
         appStoreLocales[locale] = {
