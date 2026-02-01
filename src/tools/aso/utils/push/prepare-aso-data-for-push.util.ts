@@ -18,19 +18,12 @@ import {
 
 /**
  * Prepare ASO data for pushing to stores
- * - Keeps screenshot paths (relative paths stored in aso-data.json)
- * - Sets contactWebsite (Google Play) and marketingUrl (App Store) to detail page URL
+ * - Converts unified locale keys to store-specific locale keys
+ * - Preserves all original data including screenshots
+ * - Adds video, contactWebsite, supportUrl, marketingUrl to each locale (from config)
  */
-export function prepareAsoDataForPush(
-  slug: string,
-  configData: AsoData
-): Partial<AsoData> {
+export function prepareAsoDataForPush(configData: AsoData): Partial<AsoData> {
   const storeData: Partial<AsoData> = {};
-
-  // Generate detail page URL
-  const baseUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ?? "https://labs.quartz.best";
-  const detailPageUrl = `${baseUrl}/${slug}`;
 
   if (configData.googlePlay) {
     const googlePlayData = configData.googlePlay;
@@ -40,57 +33,45 @@ export function prepareAsoDataForPush(
           [googlePlayData.defaultLanguage || DEFAULT_LOCALE]: googlePlayData,
         };
 
-    const cleanedLocales: Record<UnifiedLocale, GooglePlayAsoData> = {} as Record<
-      UnifiedLocale,
-      GooglePlayAsoData
-    >;
-    for (const [locale, localeData] of Object.entries(locales)) {
-      // Keep screenshots with relative paths
-      cleanedLocales[locale as UnifiedLocale] = {
-        ...localeData,
-      };
-    }
-
-    // Convert unified locale keys to Google Play locale keys
-    const convertedLocales: Record<string, GooglePlayAsoData> = {};
-    // Get youtubeUrl from multilingual data (app-level)
+    // Get app-level youtubeUrl
     const youtubeUrl = isGooglePlayMultilingual(googlePlayData)
       ? googlePlayData.youtubeUrl
       : (googlePlayData as GooglePlayAsoData).video || undefined;
 
-    for (const [unifiedLocale, localeData] of Object.entries(cleanedLocales)) {
+    // Convert unified locale keys to Google Play locale keys
+    const convertedLocales: Record<string, GooglePlayAsoData> = {};
+    for (const [unifiedLocale, localeData] of Object.entries(locales)) {
       const googlePlayLocale = unifiedToGooglePlay(
         unifiedLocale as UnifiedLocale
       );
       if (googlePlayLocale !== null) {
-        // Update defaultLanguage field to use Google Play locale code
-        // Add video field from app-level youtubeUrl for each locale
+        // Preserve all original data + add video from app-level youtubeUrl
         convertedLocales[googlePlayLocale] = {
           ...localeData,
           defaultLanguage: googlePlayLocale,
-          video: youtubeUrl,
+          video: localeData.video || youtubeUrl,
         };
       }
     }
 
-    // screenshots are now stored with relative paths in aso-data.json
     const googleDefaultLocale = isGooglePlayMultilingual(googlePlayData)
       ? googlePlayData.defaultLocale || DEFAULT_LOCALE
       : googlePlayData.defaultLanguage || DEFAULT_LOCALE;
     const convertedDefaultLocale =
       unifiedToGooglePlay(googleDefaultLocale as UnifiedLocale) ||
       googleDefaultLocale;
+
     storeData.googlePlay = {
       locales: convertedLocales,
       defaultLocale: convertedDefaultLocale,
-      // App-level contact information (from multilingual data)
+      // App-level contact information
       contactEmail: isGooglePlayMultilingual(googlePlayData)
         ? googlePlayData.contactEmail
         : undefined,
-      contactWebsite: detailPageUrl, // Set to detail page URL
-      youtubeUrl: isGooglePlayMultilingual(googlePlayData)
-        ? googlePlayData.youtubeUrl
-        : (googlePlayData as GooglePlayAsoData).video || undefined,
+      contactWebsite: isGooglePlayMultilingual(googlePlayData)
+        ? googlePlayData.contactWebsite
+        : undefined,
+      youtubeUrl: youtubeUrl,
     };
   }
 
@@ -100,57 +81,45 @@ export function prepareAsoDataForPush(
       ? appStoreData.locales
       : { [appStoreData.locale || DEFAULT_LOCALE]: appStoreData };
 
-    const cleanedLocales: Record<UnifiedLocale, AppStoreAsoData> = {} as Record<
-      UnifiedLocale,
-      AppStoreAsoData
-    >;
-    for (const [locale, localeData] of Object.entries(locales)) {
-      // Keep screenshots with relative paths
-      cleanedLocales[locale as UnifiedLocale] = {
-        ...localeData,
-      };
-    }
-
-    // Convert unified locale keys to App Store locale keys
-    const convertedLocales: Record<string, AppStoreAsoData> = {};
-    // Get app-level URLs from multilingual data
+    // Get app-level URLs from config
     const appLevelSupportUrl = isAppStoreMultilingual(appStoreData)
       ? appStoreData.supportUrl
       : undefined;
-    const appLevelMarketingUrl = detailPageUrl; // Always use detail page URL for marketingUrl
+    const appLevelMarketingUrl = isAppStoreMultilingual(appStoreData)
+      ? appStoreData.marketingUrl
+      : undefined;
 
-    for (const [unifiedLocale, localeData] of Object.entries(cleanedLocales)) {
+    // Convert unified locale keys to App Store locale keys
+    const convertedLocales: Record<string, AppStoreAsoData> = {};
+    for (const [unifiedLocale, localeData] of Object.entries(locales)) {
       const appStoreLocale = unifiedToAppStore(unifiedLocale as UnifiedLocale);
       if (appStoreLocale !== null) {
-        // Update locale field to use App Store locale code
-        // Add supportUrl and marketingUrl from app-level for each locale
+        // Preserve all original data + add supportUrl/marketingUrl
         convertedLocales[appStoreLocale] = {
           ...localeData,
           locale: appStoreLocale,
-          supportUrl: appLevelSupportUrl,
-          marketingUrl: appLevelMarketingUrl,
+          supportUrl: localeData.supportUrl || appLevelSupportUrl,
+          marketingUrl: localeData.marketingUrl || appLevelMarketingUrl,
         };
       }
     }
 
-    // screenshots are now stored with relative paths in aso-data.json
     const appStoreDefaultLocale = isAppStoreMultilingual(appStoreData)
       ? appStoreData.defaultLocale || DEFAULT_LOCALE
       : appStoreData.locale || DEFAULT_LOCALE;
     const convertedDefaultLocale =
       unifiedToAppStore(appStoreDefaultLocale as UnifiedLocale) ||
       appStoreDefaultLocale;
+
     storeData.appStore = {
       locales: convertedLocales,
       defaultLocale: convertedDefaultLocale,
-      // App-level contact information (from multilingual data)
+      // App-level contact information
       contactEmail: isAppStoreMultilingual(appStoreData)
         ? appStoreData.contactEmail
         : undefined,
-      supportUrl: isAppStoreMultilingual(appStoreData)
-        ? appStoreData.supportUrl
-        : undefined,
-      marketingUrl: detailPageUrl, // Set to detail page URL
+      supportUrl: appLevelSupportUrl,
+      marketingUrl: appLevelMarketingUrl,
       privacyPolicyUrl: isAppStoreMultilingual(appStoreData)
         ? appStoreData.privacyPolicyUrl
         : undefined,

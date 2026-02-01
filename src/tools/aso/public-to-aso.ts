@@ -397,8 +397,8 @@ export async function handlePublicToAso(
     );
   }
 
-  // Prepare data for push (remove screenshots, set contactWebsite, etc.)
-  const storeData = prepareAsoDataForPush(slug, sanitizedData);
+  // Prepare data for push (convert locale keys, add video/contactWebsite/supportUrl/marketingUrl from config)
+  const storeData = prepareAsoDataForPush(sanitizedData);
   const validationIssues = validateFieldLimits(sanitizedData);
   const validationMessage = formatValidationIssues(validationIssues);
 
