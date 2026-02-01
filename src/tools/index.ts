@@ -33,11 +33,17 @@ import {
   keywordResearchInputSchema,
   handleKeywordResearch,
 } from "./aso/keyword-research.js";
+// Screenshots Tools
 import {
-  localizeScreenshotsTool,
-  localizeScreenshotsInputSchema,
-  handleLocalizeScreenshots,
-} from "./aso/localize-screenshots.js";
+  translateScreenshotsTool,
+  translateScreenshotsInputSchema,
+  handleTranslateScreenshots,
+} from "./screenshots/translate-screenshots.js";
+import {
+  resizeScreenshotsTool,
+  resizeScreenshotsInputSchema,
+  handleResizeScreenshots,
+} from "./screenshots/resize-screenshots.js";
 
 // Apps Tools
 import {
@@ -113,13 +119,22 @@ export const tools: ToolInfo[] = [
     handler: handleKeywordResearch,
     category: "aso",
   },
+  // Screenshots Tools
   {
-    name: localizeScreenshotsTool.name,
-    description: localizeScreenshotsTool.description,
-    inputSchema: localizeScreenshotsTool.inputSchema,
-    zodSchema: localizeScreenshotsInputSchema,
-    handler: handleLocalizeScreenshots,
-    category: "aso",
+    name: translateScreenshotsTool.name,
+    description: translateScreenshotsTool.description,
+    inputSchema: translateScreenshotsTool.inputSchema,
+    zodSchema: translateScreenshotsInputSchema,
+    handler: handleTranslateScreenshots,
+    category: "screenshots",
+  },
+  {
+    name: resizeScreenshotsTool.name,
+    description: resizeScreenshotsTool.description,
+    inputSchema: resizeScreenshotsTool.inputSchema,
+    zodSchema: resizeScreenshotsInputSchema,
+    handler: handleResizeScreenshots,
+    category: "screenshots",
   },
   // Apps Tools
   {
@@ -160,7 +175,8 @@ export function getToolDefinitions() {
     initProjectTool,
     createBlogHtmlTool,
     keywordResearchTool,
-    localizeScreenshotsTool,
+    translateScreenshotsTool,
+    resizeScreenshotsTool,
     searchAppTool,
     validateAsoTool,
   ];

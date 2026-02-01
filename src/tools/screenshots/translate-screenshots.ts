@@ -1,12 +1,14 @@
 /**
- * localize-screenshots: Translate app screenshots to multiple languages
+ * translate-screenshots: Translate app screenshots to multiple languages
  *
  * This tool:
  * 1. Validates the app using search-app tool
  * 2. Reads supported locales from the product's locales directory
  * 3. Scans screenshots from the primary locale folder
  * 4. Uses Gemini API to translate text in images to all supported languages
- * 5. Validates and resizes output images to match source dimensions
+ * 5. Saves translated images to raw/ folder (without resizing)
+ *
+ * Use resize-screenshots after this tool to resize images to final dimensions.
  */
 
 import { z } from "zod";
@@ -14,31 +16,29 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import fs from "node:fs";
 import path from "node:path";
 import { findRegisteredApp } from "../../utils/registered-apps.util.js";
-import { getProductsDir } from "../../utils/config.util.js";
 import {
   loadProductLocales,
   resolvePrimaryLocale,
-} from "./utils/improve/load-product-locales.util.js";
+} from "../aso/utils/improve/load-product-locales.util.js";
 import {
   scanLocaleScreenshots,
   getScreenshotsDir,
+  ensureRawOutputDir,
   type ScreenshotInfo,
-} from "./utils/localize-screenshots/scan-screenshots.util.js";
+} from "./utils/scan-screenshots.util.js";
 import {
   translateImagesWithProgress,
   type TranslationProgress,
-} from "./utils/localize-screenshots/gemini-image-translator.util.js";
+} from "./utils/gemini-image-translator.util.js";
 import {
   prepareLocalesForTranslation,
   type LocaleMapping,
   type GeminiTargetLocale,
-} from "./utils/localize-screenshots/locale-mapping.constants.js";
-import { batchValidateAndResize } from "./utils/localize-screenshots/image-resizer.util.js";
+} from "./utils/locale-mapping.constants.js";
 
-const TOOL_NAME = "localize-screenshots";
+const TOOL_NAME = "translate-screenshots";
 
-// Input schema
-export const localizeScreenshotsInputSchema = z.object({
+export const translateScreenshotsInputSchema = z.object({
   appName: z
     .string()
     .describe(
@@ -66,7 +66,7 @@ export const localizeScreenshotsInputSchema = z.object({
     .boolean()
     .optional()
     .default(true)
-    .describe("Skip translation if target file already exists (default: true)"),
+    .describe("Skip translation if target raw file already exists (default: true)"),
   screenshotNumbers: z
     .union([
       z.array(z.number().int().positive()),
@@ -90,58 +90,57 @@ export const localizeScreenshotsInputSchema = z.object({
     ),
 });
 
-export type LocalizeScreenshotsInput = z.infer<
-  typeof localizeScreenshotsInputSchema
+export type TranslateScreenshotsInput = z.infer<
+  typeof translateScreenshotsInputSchema
 >;
 
-const jsonSchema = zodToJsonSchema(localizeScreenshotsInputSchema as any, {
-  name: "LocalizeScreenshotsInput",
+const jsonSchema = zodToJsonSchema(translateScreenshotsInputSchema as any, {
+  name: "TranslateScreenshotsInput",
   $refStrategy: "none",
 });
 
 const inputSchema =
-  jsonSchema.definitions?.LocalizeScreenshotsInput || jsonSchema;
+  jsonSchema.definitions?.TranslateScreenshotsInput || jsonSchema;
 
-export const localizeScreenshotsTool = {
+export const translateScreenshotsTool = {
   name: TOOL_NAME,
   description: `Translate app screenshots to multiple languages using Gemini API.
 
-**IMPORTANT:** This tool uses the search-app tool internally to validate the app. You can provide an approximate name, bundleId, or packageName.
+**OUTPUT:** Saves translated images to raw/ folder: \`{locale}/{deviceType}/raw/{filename}\`
 
-This tool:
-1. Validates the app exists in registered-apps.json
-2. Reads supported locales from public/products/{slug}/locales/ directory
-3. Scans screenshots from the primary locale's screenshots folder
-4. Uses Gemini API (imagen-3.0-generate-002) to translate text in images
-5. Validates output image dimensions match source and resizes if needed
+**IMPORTANT:** This tool saves RAW translated images without resizing.
+Use \`resize-screenshots\` after this tool to resize images to final dimensions.
+
+**Workflow:**
+1. Run \`translate-screenshots\` -> saves to raw/ folder
+2. Run \`resize-screenshots\` -> reads from raw/, resizes, saves to final location
 
 **Requirements:**
 - GEMINI_API_KEY or GOOGLE_API_KEY environment variable must be set
 - Screenshots must be in: public/products/{slug}/screenshots/{locale}/phone/ and /tablet/
 - Locale files must exist in: public/products/{slug}/locales/
 
-**Example structure:**
+**Example output structure:**
 \`\`\`
-public/products/my-app/
-├── config.json
-├── locales/
-│   ├── en-US.json (primary)
-│   ├── ko-KR.json
-│   └── ja-JP.json
-└── screenshots/
-    └── en-US/
-        ├── phone/
-        │   ├── 1.png
-        │   └── 2.png
-        └── tablet/
-            └── 1.png
+public/products/my-app/screenshots/
+├── en-US/                    # Source (primary locale)
+│   └── phone/
+│       ├── 1.png
+│       └── 2.png
+├── ko-KR/
+│   └── phone/
+│       └── raw/              # Translated (not resized)
+│           ├── 1.png
+│           └── 2.png
+└── ja-JP/
+    └── phone/
+        └── raw/
+            ├── 1.png
+            └── 2.png
 \`\`\``,
   inputSchema,
 };
 
-/**
- * Validate app exists and return slug
- */
 function validateApp(appName: string): { slug: string; name: string } {
   const { app } = findRegisteredApp(appName);
 
@@ -157,9 +156,6 @@ function validateApp(appName: string): { slug: string; name: string } {
   };
 }
 
-/**
- * Get supported locales from product's locales directory
- */
 function getSupportedLocales(slug: string): {
   primaryLocale: string;
   allLocales: string[];
@@ -179,12 +175,6 @@ function getSupportedLocales(slug: string): {
   };
 }
 
-/**
- * Get target locales (excluding primary) with intelligent filtering:
- * 1. Groups similar locales (e.g., en-US, en-GB -> only translate en-US)
- * 2. Filters by Gemini API support
- * Returns targets to translate and metadata about skipped/grouped locales
- */
 function getTargetLocales(
   allLocales: string[],
   primaryLocale: string,
@@ -195,7 +185,6 @@ function getTargetLocales(
   groupedLocales: string[];
   localeMapping: LocaleMapping;
 } {
-  // If specific targets requested, validate and filter first
   let localesToProcess = allLocales;
 
   if (requestedTargets && requestedTargets.length > 0) {
@@ -213,11 +202,8 @@ function getTargetLocales(
     localesToProcess = validTargets;
   }
 
-  // Explicitly remove primary locale from targets to avoid redundancy
   localesToProcess = localesToProcess.filter((l) => l !== primaryLocale);
 
-  // Use the centralized locale preparation function
-  // This handles: primary exclusion, similar locale grouping, Gemini support filtering
   const { translatableLocales, localeMapping, skippedLocales, groupedLocales } =
     prepareLocalesForTranslation(localesToProcess, primaryLocale);
 
@@ -233,15 +219,11 @@ interface TranslationTask {
   sourcePath: string;
   sourceLocale: string;
   targetLocale: GeminiTargetLocale;
-  outputPaths: string[]; // Multiple paths: representative + grouped locales
+  outputPaths: string[];
   deviceType: string;
   filename: string;
 }
 
-/**
- * Build translation tasks with grouped locale support
- * Each task includes outputPaths for representative + all grouped locales
- */
 function buildTranslationTasks(
   slug: string,
   screenshots: ScreenshotInfo[],
@@ -251,33 +233,29 @@ function buildTranslationTasks(
   skipExisting: boolean
 ): TranslationTask[] {
   const tasks: TranslationTask[] = [];
-
   const screenshotsDir = getScreenshotsDir(slug);
 
   for (const targetLocale of targetLocales) {
-    // targetLocale is a GeminiTargetLocale (e.g., "es-MX", "ua-UA")
-    // localeMapping contains UnifiedLocales to save to (e.g., ["es-419", "es-ES"])
     const outputLocales = localeMapping.get(targetLocale) || [];
 
     for (const screenshot of screenshots) {
-      // Build output paths for all locales in this group
       const outputPaths: string[] = [];
 
       for (const locale of outputLocales) {
+        // Save to raw/ folder
         const outputPath = path.join(
           screenshotsDir,
           locale,
           screenshot.type,
+          "raw",
           screenshot.filename
         );
 
-        // Only add path if file doesn't exist or skipExisting is false
         if (!skipExisting || !fs.existsSync(outputPath)) {
           outputPaths.push(outputPath);
         }
       }
 
-      // Skip this task entirely if all output paths already exist
       if (outputPaths.length === 0) {
         continue;
       }
@@ -296,11 +274,8 @@ function buildTranslationTasks(
   return tasks;
 }
 
-/**
- * Main handler function
- */
-export async function handleLocalizeScreenshots(
-  input: LocalizeScreenshotsInput
+export async function handleTranslateScreenshots(
+  input: TranslateScreenshotsInput
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   const {
     appName,
@@ -351,8 +326,6 @@ export async function handleLocalizeScreenshots(
   }
 
   // Step 3: Get target locales with intelligent filtering
-  // - Groups similar locales (e.g., en-US, en-GB -> only translate en-US)
-  // - Filters by Gemini API support
   const {
     targets: targetLocales,
     skippedLocales,
@@ -397,7 +370,6 @@ export async function handleLocalizeScreenshots(
 
   // Filter by screenshot numbers if specified
   if (screenshotNumbers) {
-    // Normalize screenshotNumbers to per-device format
     const isArray = Array.isArray(screenshotNumbers);
     const phoneNumbers = isArray ? screenshotNumbers : screenshotNumbers.phone;
     const tabletNumbers = isArray
@@ -412,7 +384,6 @@ export async function handleLocalizeScreenshots(
       const numbersForDevice =
         s.type === "phone" ? phoneNumbers : tabletNumbers;
 
-      // If no filter specified for this device type, include all
       if (!numbersForDevice || numbersForDevice.length === 0) {
         return true;
       }
@@ -420,7 +391,6 @@ export async function handleLocalizeScreenshots(
       return numbersForDevice.includes(num);
     });
 
-    // Build filter description for output
     const filterParts: string[] = [];
     if (isArray) {
       filterParts.push(`all: ${screenshotNumbers.join(", ")}`);
@@ -463,7 +433,7 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
     `📸 Source screenshots: ${phoneCount} phone, ${tabletCount} tablet`
   );
 
-  // Step 5: Build translation tasks (includes grouped locales in outputPaths)
+  // Step 5: Build translation tasks (output to raw/ folder)
   const tasks = buildTranslationTasks(
     appInfo.slug,
     filteredScreenshots,
@@ -503,15 +473,14 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
     }
 
     for (const [locale, localeTasks] of Object.entries(tasksByLocale)) {
-      // Show grouped locales that will also receive this translation
       const grouped = localeMapping.get(locale as GeminiTargetLocale) || [];
       const groupedOthers = grouped.filter((l) => l !== locale);
       const groupInfo =
-        groupedOthers.length > 0 ? ` → also: ${groupedOthers.join(", ")}` : "";
+        groupedOthers.length > 0 ? ` -> also: ${groupedOthers.join(", ")}` : "";
 
-      results.push(`\n📁 ${locale}${groupInfo}:`);
+      results.push(`\n📁 ${locale}${groupInfo} (raw/):`);
       for (const task of localeTasks) {
-        results.push(`   - ${task.deviceType}/${task.filename}`);
+        results.push(`   - ${task.deviceType}/raw/${task.filename}`);
       }
     }
 
@@ -525,17 +494,27 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
     };
   }
 
-  // Step 6: Execute translations
+  // Step 6: Execute translations (save to raw/ folder)
   results.push(`\n🚀 Starting translations...`);
+  results.push(`📂 Output: raw/ folder (use resize-screenshots to finalize)`);
 
   if (preserveWords && preserveWords.length > 0) {
     results.push(`🔒 Preserving words: ${preserveWords.join(", ")}`);
   }
 
+  // Ensure raw output directories exist
+  for (const task of tasks) {
+    for (const outputPath of task.outputPaths) {
+      const outputDir = path.dirname(outputPath);
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+    }
+  }
+
   const translationResult = await translateImagesWithProgress(
     tasks,
     (progress: TranslationProgress) => {
-      // Progress callback - real-time updates with current/total
       const progressPrefix = `[${progress.current}/${progress.total}]`;
       if (progress.status === "translating") {
         console.log(
@@ -543,7 +522,7 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
         );
       } else if (progress.status === "completed") {
         console.log(
-          `✅ ${progressPrefix} ${progress.targetLocale}/${progress.deviceType}/${progress.filename}`
+          `✅ ${progressPrefix} ${progress.targetLocale}/${progress.deviceType}/raw/${progress.filename}`
         );
       } else if (progress.status === "failed") {
         console.log(
@@ -570,43 +549,11 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
     }
   }
 
-  // Step 7: Validate and resize images (for all output paths including grouped locales)
-  if (translationResult.successful > 0) {
-    results.push(`\n🔍 Validating image dimensions...`);
-
-    // Collect all output paths that exist for validation
-    const resizePairs: Array<{ sourcePath: string; translatedPath: string }> =
-      [];
-    for (const task of tasks) {
-      for (const outputPath of task.outputPaths) {
-        if (fs.existsSync(outputPath)) {
-          resizePairs.push({
-            sourcePath: task.sourcePath,
-            translatedPath: outputPath,
-          });
-        }
-      }
-    }
-
-    const resizeResult = await batchValidateAndResize(resizePairs);
-
-    if (resizeResult.resized > 0) {
-      results.push(
-        `   🔧 Resized ${resizeResult.resized} images to match source dimensions`
-      );
-    } else {
-      results.push(`   ✅ All image dimensions match source`);
-    }
-
-    if (resizeResult.errors.length > 0) {
-      results.push(`   ⚠️ Resize errors: ${resizeResult.errors.length}`);
-    }
-  }
-
   // Summary
   const screenshotsDir = getScreenshotsDir(appInfo.slug);
-  results.push(`\n📁 Output location: ${screenshotsDir}/`);
-  results.push(`\n✅ Screenshot localization complete!`);
+  results.push(`\n📁 Output location: ${screenshotsDir}/{locale}/{device}/raw/`);
+  results.push(`\n✅ Screenshot translation complete!`);
+  results.push(`\n💡 Next step: Run \`resize-screenshots\` to resize images to final dimensions.`);
 
   return {
     content: [

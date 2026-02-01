@@ -20,6 +20,46 @@ export interface RgbColor {
 }
 
 /**
+ * App Store screenshot dimensions by device type
+ * Based on Apple App Store requirements for 6.5" display (iPhone 11 Pro Max)
+ * and 12.9" display (iPad Pro)
+ */
+export const SCREENSHOT_DIMENSIONS = {
+  phone: { width: 1242, height: 2688 },
+  tablet: { width: 2048, height: 2732 },
+} as const;
+
+export type DeviceType = keyof typeof SCREENSHOT_DIMENSIONS;
+
+/**
+ * Parse hex color string to RgbColor
+ * Supports formats: "#FFFFFF", "#FFF", "FFFFFF", "FFF"
+ */
+export function parseHexColor(hex: string): RgbColor | null {
+  const cleanHex = hex.replace(/^#/, "");
+
+  let r: number, g: number, b: number;
+
+  if (cleanHex.length === 3) {
+    r = parseInt(cleanHex[0] + cleanHex[0], 16);
+    g = parseInt(cleanHex[1] + cleanHex[1], 16);
+    b = parseInt(cleanHex[2] + cleanHex[2], 16);
+  } else if (cleanHex.length === 6) {
+    r = parseInt(cleanHex.slice(0, 2), 16);
+    g = parseInt(cleanHex.slice(2, 4), 16);
+    b = parseInt(cleanHex.slice(4, 6), 16);
+  } else {
+    return null;
+  }
+
+  if (isNaN(r) || isNaN(g) || isNaN(b)) {
+    return null;
+  }
+
+  return { r, g, b };
+}
+
+/**
  * Get image dimensions using sharp
  */
 export async function getImageDimensions(
@@ -130,24 +170,30 @@ export async function haveSameDimensions(
 /**
  * Resize image to match target dimensions while preserving aspect ratio
  * Uses lanczos3 kernel for high-quality downscaling
- * Fills remaining space with the detected edge background color
+ * Fills remaining space with the provided or detected background color
+ *
+ * @param inputPath - Source image path
+ * @param outputPath - Destination image path
+ * @param targetDimensions - Target width and height
+ * @param bgColor - Optional background color (if not provided, auto-detected from corners)
  */
 export async function resizeImage(
   inputPath: string,
   outputPath: string,
-  targetDimensions: ImageDimensions
+  targetDimensions: ImageDimensions,
+  bgColor?: RgbColor
 ): Promise<void> {
-  // Detect background color from the input image corners
-  const bgColor = await detectCornerColor(inputPath);
+  // Use provided color or detect from image corners
+  const backgroundColor = bgColor ?? (await detectCornerColor(inputPath));
 
   await sharp(inputPath)
     .resize(targetDimensions.width, targetDimensions.height, {
       fit: "contain", // Preserve aspect ratio
       withoutEnlargement: false, // Allow enlargement if needed
-      background: bgColor, // Use detected edge color
+      background: backgroundColor,
       kernel: "lanczos3", // High-quality downscaling algorithm
     })
-    .flatten({ background: bgColor }) // Ensure background is applied
+    .flatten({ background: backgroundColor }) // Ensure background is applied
     .png()
     .toFile(outputPath + ".tmp");
 

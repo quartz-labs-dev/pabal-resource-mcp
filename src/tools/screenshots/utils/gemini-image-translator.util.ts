@@ -9,7 +9,7 @@ import { GoogleGenAI } from "@google/genai";
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
-import { getGeminiApiKey } from "../../../../utils/config.util.js";
+import { getGeminiApiKey } from "../../../utils/config.util.js";
 import { type GeminiTargetLocale } from "./locale-mapping.constants.js";
 
 // App Store screenshot dimensions by device type

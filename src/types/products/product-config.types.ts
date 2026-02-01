@@ -28,6 +28,8 @@ export interface ProductMetadata {
   youtubeUrl?: string;
   screenshots?: ProductScreenshots;
   featureGraphic?: string;
+  /** Background color for screenshot resizing (hex format, e.g., "#FFFFFF") */
+  screenshotBgColor?: string;
 }
 
 /**

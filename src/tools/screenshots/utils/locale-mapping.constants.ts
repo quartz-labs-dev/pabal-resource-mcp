@@ -9,7 +9,7 @@
  * EN, ar-EG, de-DE, es-MX, fr-FR, hi-IN, id-ID, it-IT, ja-JP, ko-KR, pt-BR, ru-RU, ua-UA, vi-VN, zh-CN
  */
 
-import { type UnifiedLocale } from "../../../../constants/unified-locales.js";
+import { type UnifiedLocale } from "../../../constants/unified-locales.js";
 
 /**
  * Gemini API supported locale codes for image generation.
