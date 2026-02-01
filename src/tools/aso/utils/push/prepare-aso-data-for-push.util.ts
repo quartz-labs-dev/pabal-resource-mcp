@@ -53,15 +53,22 @@ export function prepareAsoDataForPush(
 
     // Convert unified locale keys to Google Play locale keys
     const convertedLocales: Record<string, GooglePlayAsoData> = {};
+    // Get youtubeUrl from multilingual data (app-level)
+    const youtubeUrl = isGooglePlayMultilingual(googlePlayData)
+      ? googlePlayData.youtubeUrl
+      : (googlePlayData as GooglePlayAsoData).video || undefined;
+
     for (const [unifiedLocale, localeData] of Object.entries(cleanedLocales)) {
       const googlePlayLocale = unifiedToGooglePlay(
         unifiedLocale as UnifiedLocale
       );
       if (googlePlayLocale !== null) {
         // Update defaultLanguage field to use Google Play locale code
+        // Add video field from app-level youtubeUrl for each locale
         convertedLocales[googlePlayLocale] = {
           ...localeData,
           defaultLanguage: googlePlayLocale,
+          video: youtubeUrl,
         };
       }
     }
@@ -106,13 +113,22 @@ export function prepareAsoDataForPush(
 
     // Convert unified locale keys to App Store locale keys
     const convertedLocales: Record<string, AppStoreAsoData> = {};
+    // Get app-level URLs from multilingual data
+    const appLevelSupportUrl = isAppStoreMultilingual(appStoreData)
+      ? appStoreData.supportUrl
+      : undefined;
+    const appLevelMarketingUrl = detailPageUrl; // Always use detail page URL for marketingUrl
+
     for (const [unifiedLocale, localeData] of Object.entries(cleanedLocales)) {
       const appStoreLocale = unifiedToAppStore(unifiedLocale as UnifiedLocale);
       if (appStoreLocale !== null) {
         // Update locale field to use App Store locale code
+        // Add supportUrl and marketingUrl from app-level for each locale
         convertedLocales[appStoreLocale] = {
           ...localeData,
           locale: appStoreLocale,
+          supportUrl: appLevelSupportUrl,
+          marketingUrl: appLevelMarketingUrl,
         };
       }
     }
