@@ -44,6 +44,11 @@ import {
   resizeScreenshotsInputSchema,
   handleResizeScreenshots,
 } from "./screenshots/resize-screenshots.js";
+import {
+  phoneToTabletTool,
+  phoneToTabletInputSchema,
+  handlePhoneToTablet,
+} from "./screenshots/phone-to-tablet.js";
 
 // Apps Tools
 import {
@@ -136,6 +141,14 @@ export const tools: ToolInfo[] = [
     handler: handleResizeScreenshots,
     category: "screenshots",
   },
+  {
+    name: phoneToTabletTool.name,
+    description: phoneToTabletTool.description,
+    inputSchema: phoneToTabletTool.inputSchema,
+    zodSchema: phoneToTabletInputSchema,
+    handler: handlePhoneToTablet,
+    category: "screenshots",
+  },
   // Apps Tools
   {
     name: initProjectTool.name,
@@ -177,6 +190,7 @@ export function getToolDefinitions() {
     keywordResearchTool,
     translateScreenshotsTool,
     resizeScreenshotsTool,
+    phoneToTabletTool,
     searchAppTool,
     validateAsoTool,
   ];
