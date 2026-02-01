@@ -1,6 +1,6 @@
 {
   "name": "pabal-resource-mcp",
-  "version": "1.6.8",
+  "version": "1.6.9",
   "type": "module",
   "description": "MCP server for ASO data management with shared types and utilities",
   "author": "skyu",
