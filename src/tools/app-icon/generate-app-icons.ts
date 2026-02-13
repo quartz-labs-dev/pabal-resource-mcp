@@ -38,6 +38,7 @@ import {
   type LogoAlignment,
 } from "./utils/icon-resizer.util.js";
 import { applyWhiteMasking } from "./utils/icon-masking.util.js";
+import type { ProductConfig } from "../../types/products/product-config.types.js";
 
 const TOOL_NAME = "generate-app-icons";
 
@@ -60,11 +61,19 @@ export const generateAppIconsInputSchema = z.object({
     .describe(
       "Specific icon types to generate. If not provided, all icon types will be generated."
     ),
+  styleFolder: z
+    .string()
+    .optional()
+    .describe(
+      "Style folder name for themed icons (e.g., 'christmas', 'halloween'). " +
+        "Icons will be generated in icons/{styleFolder}/ directory. " +
+        "If specified and style exists in config, uses style-specific defaults for backgroundColor and alignment."
+    ),
   backgroundColor: z
     .string()
     .optional()
     .describe(
-      'Background color as hex (e.g., "#FFFFFF") or "transparent" (default: transparent). ' +
+      'Background color as hex (e.g., "#FFFFFF") or "transparent" (default: transparent or config default). ' +
         "Only applies to icons with backgrounds (iOS, adaptive, splash). Notification icon is always transparent."
     ),
   logoAlignment: z
@@ -80,9 +89,8 @@ export const generateAppIconsInputSchema = z.object({
       "bottom-right",
     ])
     .optional()
-    .default("center")
     .describe(
-      "Logo alignment within the canvas (default: center). " +
+      "Logo alignment within the canvas (default: center or config default). " +
         "Affects how the logo is positioned relative to the safe zone."
     ),
   useAiMasking: z
@@ -131,8 +139,8 @@ export const generateAppIconsTool = {
   name: TOOL_NAME,
   description: `Generate app icons in various platform-specific formats from a base icon.
 
-**INPUT:** Reads base icon from: \`{slug}/icons/icon.png\`
-**OUTPUT:** Generates platform-specific icons in: \`{slug}/icons/\`
+**INPUT:** Reads base icon from: \`{slug}/icons/icon.png\` or \`{slug}/icons/{styleFolder}/icon.png\`
+**OUTPUT:** Generates platform-specific icons in: \`{slug}/icons/\` or \`{slug}/icons/{styleFolder}/\`
 
 **Generated Icons:**
 1. **ios-light.png** (1024x1024): iOS app icon, logo fits within 890px circle
@@ -146,6 +154,8 @@ export const generateAppIconsTool = {
 - **Flexible Alignment**: Position logo center/left/right/top/bottom relative to safe zone
 - **White Masking**: Sharp-based (default, fast, free) or AI-powered (Gemini, more sophisticated)
 - **Custom Background**: Hex colors or transparent backgrounds
+- **Style Variants**: Generate themed icons (christmas, halloween, etc.) with style-specific defaults
+- **Config Integration**: Uses config.json appIcon settings for default colors and alignment
 
 **White Masking Options:**
 - **Default (useAiMasking=false)**: Sharp threshold conversion - fast, free, no API key needed
@@ -159,11 +169,19 @@ OUTPUT: my-app/icons/ios-light.png (logo centered in safe zone)
         my-app/icons/adaptive-icon.png (logo aligned as specified)
         my-app/icons/splash-icon-light.png
         my-app/icons/android-notification-icon.png (white mask, Sharp or AI)
+
+With styleFolder='christmas':
+INPUT:  my-app/icons/christmas/icon.png
+OUTPUT: my-app/icons/christmas/ios-light.png (uses christmas style defaults)
+        my-app/icons/christmas/adaptive-icon.png
+        ...
 \`\`\``,
   inputSchema,
 };
 
-function validateApp(appName: string): { slug: string; name: string } {
+function validateApp(
+  appName: string
+): { slug: string; name: string; config?: ProductConfig } {
   const { app } = findRegisteredApp(appName);
 
   if (!app) {
@@ -172,9 +190,27 @@ function validateApp(appName: string): { slug: string; name: string } {
     );
   }
 
+  // Load config.json if exists
+  const configPath = `public/products/${app.slug}/config.json`;
+  let config: ProductConfig | undefined;
+
+  if (fs.existsSync(configPath)) {
+    try {
+      const configData = fs.readFileSync(configPath, "utf-8");
+      config = JSON.parse(configData) as ProductConfig;
+    } catch (error) {
+      // Config exists but couldn't be parsed - continue without it
+      console.warn(
+        `⚠️ Could not parse config.json for ${app.slug}:`,
+        error instanceof Error ? error.message : String(error)
+      );
+    }
+  }
+
   return {
     slug: app.slug,
     name: app.name || app.slug,
+    config,
   };
 }
 
@@ -188,11 +224,12 @@ interface GenerationTask {
 function buildGenerationTasks(
   slug: string,
   iconTypes: IconType[],
-  skipExisting: boolean
+  skipExisting: boolean,
+  styleFolder?: string
 ): { tasks: GenerationTask[]; baseIconPath: string } {
   const tasks: GenerationTask[] = [];
-  const baseIconPath = getBaseIconPath(slug);
-  const iconsDir = getIconsDir(slug);
+  const baseIconPath = getBaseIconPath(slug, styleFolder);
+  const iconsDir = getIconsDir(slug, styleFolder);
 
   // Verify base icon exists
   if (!fs.existsSync(baseIconPath)) {
@@ -203,7 +240,7 @@ function buildGenerationTasks(
 
   // Build tasks for each icon type
   for (const iconType of iconTypes) {
-    const outputPath = getIconOutputPath(slug, iconType);
+    const outputPath = getIconOutputPath(slug, iconType, styleFolder);
 
     if (skipExisting && fs.existsSync(outputPath)) {
       continue;
@@ -332,8 +369,9 @@ export async function handleGenerateAppIcons(
   const {
     appName,
     iconTypes: requestedIconTypes,
-    backgroundColor: bgColorInput = "transparent",
-    logoAlignment = "center",
+    styleFolder,
+    backgroundColor: bgColorInput,
+    logoAlignment: logoAlignmentInput,
     useAiMasking = false,
     logoPosition,
     skipExisting = false,
@@ -342,8 +380,8 @@ export async function handleGenerateAppIcons(
 
   const results: string[] = [];
 
-  // Step 1: Validate app
-  let appInfo: { slug: string; name: string };
+  // Step 1: Validate app and load config
+  let appInfo: { slug: string; name: string; config?: ProductConfig };
   try {
     appInfo = validateApp(appName);
     results.push(`✅ App found: ${appInfo.name} (${appInfo.slug})`);
@@ -358,16 +396,39 @@ export async function handleGenerateAppIcons(
     };
   }
 
+  // Get style-specific config defaults if available
+  const styleConfig =
+    styleFolder && appInfo.config?.appIcon?.styles?.[styleFolder];
+  const defaultBgColor =
+    styleConfig?.backgroundColor ||
+    appInfo.config?.appIcon?.defaultBackgroundColor ||
+    "transparent";
+  const defaultAlignment =
+    styleConfig?.alignment ||
+    appInfo.config?.appIcon?.defaultAlignment ||
+    "center";
+
+  // Use input values or fall back to config defaults
+  const backgroundColor = bgColorInput ?? defaultBgColor;
+  const logoAlignment = logoAlignmentInput ?? defaultAlignment;
+
+  if (styleFolder) {
+    results.push(`🎨 Style: ${styleFolder}`);
+    if (styleConfig) {
+      results.push(`   Using style-specific defaults from config`);
+    }
+  }
+
   // Step 2: Parse background color
-  let backgroundColor: RgbColor | "transparent" = "transparent";
-  if (bgColorInput && bgColorInput !== "transparent") {
-    const parsed = parseHexColor(bgColorInput);
+  let bgColor: RgbColor | "transparent" = "transparent";
+  if (backgroundColor && backgroundColor !== "transparent") {
+    const parsed = parseHexColor(backgroundColor);
     if (parsed) {
-      backgroundColor = parsed;
-      results.push(`🎨 Background color: ${bgColorInput}`);
+      bgColor = parsed;
+      results.push(`🎨 Background color: ${backgroundColor}`);
     } else {
       results.push(
-        `⚠️ Invalid background color: ${bgColorInput} (using transparent)`
+        `⚠️ Invalid background color: ${backgroundColor} (using transparent)`
       );
     }
   } else {
@@ -393,7 +454,12 @@ export async function handleGenerateAppIcons(
   let baseIconPath: string;
 
   try {
-    const taskInfo = buildGenerationTasks(appInfo.slug, iconTypes, skipExisting);
+    const taskInfo = buildGenerationTasks(
+      appInfo.slug,
+      iconTypes,
+      skipExisting,
+      styleFolder
+    );
     tasks = taskInfo.tasks;
     baseIconPath = taskInfo.baseIconPath;
 
@@ -454,7 +520,7 @@ export async function handleGenerateAppIcons(
 
   const generationResult = await generateIcons(
     tasks,
-    backgroundColor,
+    bgColor,
     logoAlignment,
     useAiMasking,
     logoPosition,
@@ -487,7 +553,7 @@ export async function handleGenerateAppIcons(
   }
 
   // Summary
-  const iconsDir = getIconsDir(appInfo.slug);
+  const iconsDir = getIconsDir(appInfo.slug, styleFolder);
   results.push(`\n📁 Output location: ${iconsDir}/`);
   results.push(`\n✅ Icon generation complete!`);
 

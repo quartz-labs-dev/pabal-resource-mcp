@@ -59,21 +59,33 @@ export const ALL_ICON_TYPES: IconType[] = Object.keys(
 
 /**
  * Get icons directory for a product
+ * @param slug - Product slug
+ * @param styleFolder - Optional style folder (e.g., 'christmas', 'halloween')
  */
-export function getIconsDir(slug: string): string {
-  return `public/products/${slug}/icons`;
+export function getIconsDir(slug: string, styleFolder?: string): string {
+  const baseDir = `public/products/${slug}/icons`;
+  return styleFolder ? `${baseDir}/${styleFolder}` : baseDir;
 }
 
 /**
  * Get base icon path for a product
+ * @param slug - Product slug
+ * @param styleFolder - Optional style folder
  */
-export function getBaseIconPath(slug: string): string {
-  return `${getIconsDir(slug)}/${ICON_FILENAMES.BASE}`;
+export function getBaseIconPath(slug: string, styleFolder?: string): string {
+  return `${getIconsDir(slug, styleFolder)}/${ICON_FILENAMES.BASE}`;
 }
 
 /**
  * Get output icon path for a specific icon type
+ * @param slug - Product slug
+ * @param iconType - Icon type to generate
+ * @param styleFolder - Optional style folder
  */
-export function getIconOutputPath(slug: string, iconType: IconType): string {
-  return `${getIconsDir(slug)}/${ICON_SPECS[iconType].filename}`;
+export function getIconOutputPath(
+  slug: string,
+  iconType: IconType,
+  styleFolder?: string
+): string {
+  return `${getIconsDir(slug, styleFolder)}/${ICON_SPECS[iconType].filename}`;
 }

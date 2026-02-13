@@ -239,6 +239,7 @@ This package includes an MCP server for managing ASO data through Claude or othe
 |             | `resize-screenshots`         | Resize screenshots to App Store dimensions               |
 |             | `phone-to-tablet`            | Convert phone screenshots to tablet layout               |
 | App Icon    | `generate-app-icons`         | Generate platform-specific app icons from base icon      |
+|             | `stylize-app-icon`           | Transform icons with seasonal/themed styles using AI     |
 | Content     | `create-blog-html`           | Generate static HTML blog posts with BLOG_META headers   |
 
 ### Using external keyword MCP ([appreply-co/mcp-appstore](https://github.com/appreply-co/mcp-appstore))

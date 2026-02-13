@@ -15,6 +15,44 @@ export interface ProductScreenshots {
 }
 
 /**
+ * App Icon style configuration
+ */
+export interface AppIconStyleConfig {
+  backgroundColor?: string;
+  alignment?:
+    | "center"
+    | "left"
+    | "right"
+    | "top"
+    | "bottom"
+    | "top-left"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-right";
+}
+
+/**
+ * App Icon configuration
+ */
+export interface AppIconConfig {
+  /** Default background color for app icons (hex format, e.g., "#FFFFFF") */
+  defaultBackgroundColor?: string;
+  /** Default logo alignment */
+  defaultAlignment?:
+    | "center"
+    | "left"
+    | "right"
+    | "top"
+    | "bottom"
+    | "top-left"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-right";
+  /** Style-specific configurations (e.g., christmas, halloween) */
+  styles?: Record<string, AppIconStyleConfig>;
+}
+
+/**
  * Product Metadata (store-common metadata)
  */
 export interface ProductMetadata {
@@ -64,6 +102,9 @@ export interface ProductConfig {
 
   // Content settings (exists in actual config.json)
   content?: ProductContent;
+
+  // App Icon settings
+  appIcon?: AppIconConfig;
 
   // Legacy/optional fields (used in code but may not exist in config.json)
   name?: string;

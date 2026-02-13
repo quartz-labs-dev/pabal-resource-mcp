@@ -56,6 +56,11 @@ import {
   generateAppIconsInputSchema,
   handleGenerateAppIcons,
 } from "./app-icon/generate-app-icons.js";
+import {
+  stylizeAppIconTool,
+  stylizeAppIconInputSchema,
+  handleStylizeAppIcon,
+} from "./app-icon/stylize-app-icon.js";
 
 // Apps Tools
 import {
@@ -165,6 +170,14 @@ export const tools: ToolInfo[] = [
     handler: handleGenerateAppIcons,
     category: "app-icon",
   },
+  {
+    name: stylizeAppIconTool.name,
+    description: stylizeAppIconTool.description,
+    inputSchema: stylizeAppIconTool.inputSchema,
+    zodSchema: stylizeAppIconInputSchema,
+    handler: handleStylizeAppIcon,
+    category: "app-icon",
+  },
   // Apps Tools
   {
     name: initProjectTool.name,
@@ -208,6 +221,7 @@ export function getToolDefinitions() {
     resizeScreenshotsTool,
     phoneToTabletTool,
     generateAppIconsTool,
+    stylizeAppIconTool,
     searchAppTool,
     validateAsoTool,
   ];
