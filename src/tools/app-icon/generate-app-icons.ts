@@ -162,6 +162,12 @@ export const generateAppIconsTool = {
 - **Default (useAiMasking=false)**: Sharp threshold conversion - fast, free, no API key needed
 - **AI-Powered (useAiMasking=true)**: Gemini API - more sophisticated, requires GEMINI_API_KEY
 
+**⚠️ Important: After Generation**
+After generating icons, always check **android-notification-icon.png**:
+- If white masking is not clean (unwanted artifacts, incomplete conversion, or poor contrast)
+- Regenerate with \`useAiMasking: true\` for better AI-powered masking
+- Example: \`{ "appName": "my-app", "useAiMasking": true, "iconTypes": ["android-notification-icon"] }\`
+
 **Example:**
 \`\`\`
 INPUT:  my-app/icons/icon.png (source logo with padding)
@@ -558,6 +564,23 @@ export async function handleGenerateAppIcons(
   const iconsDir = getIconsDir(appInfo.slug, styleFolder);
   results.push(`\n📁 Output location: ${iconsDir}/`);
   results.push(`\n✅ Icon generation complete!`);
+
+  // Check if notification icon was generated and add reminder
+  const hasNotificationIcon = generationResult.results.some(
+    (r) => r.iconType === "android-notification-icon" && r.success
+  );
+
+  if (hasNotificationIcon && !useAiMasking) {
+    results.push(
+      `\n⚠️  IMPORTANT: Check android-notification-icon.png`
+    );
+    results.push(
+      `   If white masking looks incorrect (artifacts, incomplete conversion, poor contrast):`
+    );
+    results.push(
+      `   Regenerate with AI masking: { "appName": "${appInfo.slug}", "useAiMasking": true, "iconTypes": ["android-notification-icon"]${styleFolder ? `, "styleFolder": "${styleFolder}"` : ""} }`
+    );
+  }
 
   return {
     content: [

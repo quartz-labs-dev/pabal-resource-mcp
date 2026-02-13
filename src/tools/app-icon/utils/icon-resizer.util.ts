@@ -302,14 +302,14 @@ function calculatePosition(
       break;
 
     case "left":
-      // Right edge of logo aligns with right edge of safe zone
-      left = Math.floor(safeZoneRight - logoSize.width);
+      // Left edge of logo aligns with left edge of safe zone
+      left = Math.floor(safeZoneLeft);
       top = Math.floor((canvasSize - logoSize.height) / 2);
       break;
 
     case "right":
-      // Left edge of logo aligns with left edge of safe zone
-      left = Math.floor(safeZoneLeft);
+      // Right edge of logo aligns with right edge of safe zone
+      left = Math.floor(safeZoneRight - logoSize.width);
       top = Math.floor((canvasSize - logoSize.height) / 2);
       break;
 
@@ -326,23 +326,23 @@ function calculatePosition(
       break;
 
     case "top-left":
-      left = Math.floor(safeZoneRight - logoSize.width);
-      top = Math.floor(safeZoneBottom - logoSize.height);
+      left = Math.floor(safeZoneLeft);
+      top = Math.floor(safeZoneTop);
       break;
 
     case "top-right":
-      left = Math.floor(safeZoneLeft);
-      top = Math.floor(safeZoneBottom - logoSize.height);
-      break;
-
-    case "bottom-left":
       left = Math.floor(safeZoneRight - logoSize.width);
       top = Math.floor(safeZoneTop);
       break;
 
-    case "bottom-right":
+    case "bottom-left":
       left = Math.floor(safeZoneLeft);
-      top = Math.floor(safeZoneTop);
+      top = Math.floor(safeZoneBottom - logoSize.height);
+      break;
+
+    case "bottom-right":
+      left = Math.floor(safeZoneRight - logoSize.width);
+      top = Math.floor(safeZoneBottom - logoSize.height);
       break;
 
     default:
