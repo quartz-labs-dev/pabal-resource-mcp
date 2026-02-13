@@ -226,15 +226,20 @@ pabal-resource-mcp는 `pabal-store-api-mcp`의 설정 파일을 사용합니다.
 
 ### 사용 가능한 툴
 
-| 툴                      | 설명                                               |
-| ----------------------- | -------------------------------------------------- |
-| `aso-to-public`         | ASO 데이터를 public config 형식으로 변환           |
-| `public-to-aso`         | public config를 ASO 데이터 형식으로 변환           |
-| `keyword-research`      | ASO 키워드 연구 계획/저장 (.aso/keywordResearch)   |
-| `improve-public`        | AI 제안으로 제품 로케일 콘텐츠 개선                |
-| `localize-screenshots`  | Gemini API를 사용하여 스크린샷 번역                |
-| `init-project`          | 새로운 제품 프로젝트 구조 초기화                   |
-| `create-blog-html`      | BLOG_META 헤더가 있는 정적 HTML 블로그 게시물 생성 |
+| 카테고리    | 툴                           | 설명                                               |
+| ----------- | ---------------------------- | -------------------------------------------------- |
+| ASO         | `aso-to-public`              | ASO 데이터를 public config 형식으로 변환           |
+|             | `public-to-aso`              | public config를 ASO 데이터 형식으로 변환           |
+|             | `keyword-research`           | ASO 키워드 연구 계획/저장 (.aso/keywordResearch)   |
+|             | `improve-public`             | AI 제안으로 제품 로케일 콘텐츠 개선                |
+|             | `validate-aso`               | 스토어 요구사항에 따라 ASO 데이터 검증             |
+| 앱          | `init-project`               | 새로운 제품 프로젝트 구조 초기화                   |
+|             | `search-app`                 | 이름/번들 ID로 등록된 앱 검색                      |
+| 스크린샷    | `translate-screenshots`      | Gemini API를 사용하여 스크린샷의 텍스트 번역       |
+|             | `resize-screenshots`         | 스크린샷을 App Store 크기로 리사이징               |
+|             | `phone-to-tablet`            | 폰 스크린샷을 태블릿 레이아웃으로 변환             |
+| 앱 아이콘   | `generate-app-icons`         | 기본 아이콘에서 플랫폼별 앱 아이콘 생성            |
+| 콘텐츠      | `create-blog-html`           | BLOG_META 헤더가 있는 정적 HTML 블로그 게시물 생성 |
 
 ### 외부 키워드 MCP 사용 ([appreply-co/mcp-appstore](https://github.com/appreply-co/mcp-appstore))
 

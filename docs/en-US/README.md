@@ -226,15 +226,20 @@ This package includes an MCP server for managing ASO data through Claude or othe
 
 ### Available Tools
 
-| Tool                    | Description                                              |
-| ----------------------- | -------------------------------------------------------- |
-| `aso-to-public`         | Convert ASO data to public config format                 |
-| `public-to-aso`         | Convert public config to ASO data format                 |
-| `keyword-research`      | Plan/persist ASO keyword research (.aso/keywordResearch) |
-| `improve-public`        | Improve product locale content with AI suggestions       |
-| `localize-screenshots`  | Translate app screenshots using Gemini API               |
-| `init-project`          | Initialize a new product project structure               |
-| `create-blog-html`      | Generate static HTML blog posts with BLOG_META headers   |
+| Category    | Tool                         | Description                                              |
+| ----------- | ---------------------------- | -------------------------------------------------------- |
+| ASO         | `aso-to-public`              | Convert ASO data to public config format                 |
+|             | `public-to-aso`              | Convert public config to ASO data format                 |
+|             | `keyword-research`           | Plan/persist ASO keyword research (.aso/keywordResearch) |
+|             | `improve-public`             | Improve product locale content with AI suggestions       |
+|             | `validate-aso`               | Validate ASO data against store requirements             |
+| Apps        | `init-project`               | Initialize a new product project structure               |
+|             | `search-app`                 | Search for registered apps by name/bundle ID             |
+| Screenshots | `translate-screenshots`      | Translate text in screenshots using Gemini API           |
+|             | `resize-screenshots`         | Resize screenshots to App Store dimensions               |
+|             | `phone-to-tablet`            | Convert phone screenshots to tablet layout               |
+| App Icon    | `generate-app-icons`         | Generate platform-specific app icons from base icon      |
+| Content     | `create-blog-html`           | Generate static HTML blog posts with BLOG_META headers   |
 
 ### Using external keyword MCP ([appreply-co/mcp-appstore](https://github.com/appreply-co/mcp-appstore))
 

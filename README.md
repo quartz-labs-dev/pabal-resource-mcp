@@ -53,11 +53,13 @@ Set `dataDir` in `~/.config/pabal-mcp/config.json`:
 
 ## Tools
 
-| Category | Tools                                                                                  |
-| -------- | -------------------------------------------------------------------------------------- |
-| ASO      | `aso-to-public`, `public-to-aso`, `improve-public`, `validate-aso`, `keyword-research` |
-| Apps     | `init-project`, `search-app`                                                           |
-| Content  | `create-blog-html`                                                                     |
+| Category    | Tools                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------- |
+| ASO         | `aso-to-public`, `public-to-aso`, `improve-public`, `validate-aso`, `keyword-research` |
+| Apps        | `init-project`, `search-app`                                                           |
+| Screenshots | `translate-screenshots`, `resize-screenshots`, `phone-to-tablet`                       |
+| App Icon    | `generate-app-icons`                                                                   |
+| Content     | `create-blog-html`                                                                     |
 
 See [documentation](./docs/en-US/README.md) for details.
 

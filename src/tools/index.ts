@@ -50,6 +50,13 @@ import {
   handlePhoneToTablet,
 } from "./screenshots/phone-to-tablet.js";
 
+// App Icon Tools
+import {
+  generateAppIconsTool,
+  generateAppIconsInputSchema,
+  handleGenerateAppIcons,
+} from "./app-icon/generate-app-icons.js";
+
 // Apps Tools
 import {
   initProjectTool,
@@ -149,6 +156,15 @@ export const tools: ToolInfo[] = [
     handler: handlePhoneToTablet,
     category: "screenshots",
   },
+  // App Icon Tools
+  {
+    name: generateAppIconsTool.name,
+    description: generateAppIconsTool.description,
+    inputSchema: generateAppIconsTool.inputSchema,
+    zodSchema: generateAppIconsInputSchema,
+    handler: handleGenerateAppIcons,
+    category: "app-icon",
+  },
   // Apps Tools
   {
     name: initProjectTool.name,
@@ -191,6 +207,7 @@ export function getToolDefinitions() {
     translateScreenshotsTool,
     resizeScreenshotsTool,
     phoneToTabletTool,
+    generateAppIconsTool,
     searchAppTool,
     validateAsoTool,
   ];
