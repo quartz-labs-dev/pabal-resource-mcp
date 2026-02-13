@@ -20,6 +20,7 @@ import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
 import { findRegisteredApp } from "../../utils/registered-apps.util.js";
+import { getProductsDir } from "../../utils/config.util.js";
 import {
   ICON_SPECS,
   ALL_ICON_TYPES,
@@ -191,7 +192,8 @@ function validateApp(
   }
 
   // Load config.json if exists
-  const configPath = `public/products/${app.slug}/config.json`;
+  const productsDir = getProductsDir();
+  const configPath = path.join(productsDir, app.slug, "config.json");
   let config: ProductConfig | undefined;
 
   if (fs.existsSync(configPath)) {

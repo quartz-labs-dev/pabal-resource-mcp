@@ -2,6 +2,9 @@
  * icon-specs: Icon specification definitions for different platforms
  */
 
+import path from "node:path";
+import { getProductsDir } from "../../../utils/config.util.js";
+
 export interface IconSpec {
   filename: string;
   size: number;
@@ -63,8 +66,9 @@ export const ALL_ICON_TYPES: IconType[] = Object.keys(
  * @param styleFolder - Optional style folder (e.g., 'christmas', 'halloween')
  */
 export function getIconsDir(slug: string, styleFolder?: string): string {
-  const baseDir = `public/products/${slug}/icons`;
-  return styleFolder ? `${baseDir}/${styleFolder}` : baseDir;
+  const productsDir = getProductsDir();
+  const baseDir = path.join(productsDir, slug, "icons");
+  return styleFolder ? path.join(baseDir, styleFolder) : baseDir;
 }
 
 /**
@@ -73,7 +77,7 @@ export function getIconsDir(slug: string, styleFolder?: string): string {
  * @param styleFolder - Optional style folder
  */
 export function getBaseIconPath(slug: string, styleFolder?: string): string {
-  return `${getIconsDir(slug, styleFolder)}/${ICON_FILENAMES.BASE}`;
+  return path.join(getIconsDir(slug, styleFolder), ICON_FILENAMES.BASE);
 }
 
 /**
@@ -87,5 +91,5 @@ export function getIconOutputPath(
   iconType: IconType,
   styleFolder?: string
 ): string {
-  return `${getIconsDir(slug, styleFolder)}/${ICON_SPECS[iconType].filename}`;
+  return path.join(getIconsDir(slug, styleFolder), ICON_SPECS[iconType].filename);
 }
