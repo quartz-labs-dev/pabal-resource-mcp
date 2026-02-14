@@ -183,8 +183,9 @@ export async function detectBackgroundColor(
 
   // Sample a small region from top-left corner
   const sampleSize = 10;
-  const { data } = await image
+  const { data, info } = await image
     .extract({ left: 0, top: 0, width: sampleSize, height: sampleSize })
+    .ensureAlpha() // Ensure we have consistent 4 channels (RGBA)
     .raw()
     .toBuffer({ resolveWithObject: true });
 
@@ -193,8 +194,9 @@ export async function detectBackgroundColor(
     g = 0,
     b = 0;
   const pixelCount = sampleSize * sampleSize;
+  const channels = info.channels; // Get actual channel count
 
-  for (let i = 0; i < data.length; i += 3) {
+  for (let i = 0; i < data.length; i += channels) {
     r += data[i];
     g += data[i + 1];
     b += data[i + 2];
@@ -286,12 +288,6 @@ function calculatePosition(
   safeZoneRadius: number,
   alignment: LogoAlignment
 ): { left: number; top: number } {
-  const center = canvasSize / 2;
-  const safeZoneLeft = center - safeZoneRadius;
-  const safeZoneRight = center + safeZoneRadius;
-  const safeZoneTop = center - safeZoneRadius;
-  const safeZoneBottom = center + safeZoneRadius;
-
   let left: number;
   let top: number;
 
@@ -302,47 +298,47 @@ function calculatePosition(
       break;
 
     case "left":
-      // Left edge of logo aligns with left edge of safe zone
-      left = Math.floor(safeZoneLeft);
+      // Left edge of logo aligns with left edge of canvas
+      left = 0;
       top = Math.floor((canvasSize - logoSize.height) / 2);
       break;
 
     case "right":
-      // Right edge of logo aligns with right edge of safe zone
-      left = Math.floor(safeZoneRight - logoSize.width);
+      // Right edge of logo aligns with right edge of canvas
+      left = canvasSize - logoSize.width;
       top = Math.floor((canvasSize - logoSize.height) / 2);
       break;
 
     case "top":
       left = Math.floor((canvasSize - logoSize.width) / 2);
-      // Bottom edge of logo aligns with bottom edge of safe zone
-      top = Math.floor(safeZoneBottom - logoSize.height);
+      // Top edge of logo aligns with top edge of canvas
+      top = 0;
       break;
 
     case "bottom":
       left = Math.floor((canvasSize - logoSize.width) / 2);
-      // Top edge of logo aligns with top edge of safe zone
-      top = Math.floor(safeZoneTop);
+      // Bottom edge of logo aligns with bottom edge of canvas
+      top = canvasSize - logoSize.height;
       break;
 
     case "top-left":
-      left = Math.floor(safeZoneLeft);
-      top = Math.floor(safeZoneTop);
+      left = 0;
+      top = 0;
       break;
 
     case "top-right":
-      left = Math.floor(safeZoneRight - logoSize.width);
-      top = Math.floor(safeZoneTop);
+      left = canvasSize - logoSize.width;
+      top = 0;
       break;
 
     case "bottom-left":
-      left = Math.floor(safeZoneLeft);
-      top = Math.floor(safeZoneBottom - logoSize.height);
+      left = 0;
+      top = canvasSize - logoSize.height;
       break;
 
     case "bottom-right":
-      left = Math.floor(safeZoneRight - logoSize.width);
-      top = Math.floor(safeZoneBottom - logoSize.height);
+      left = canvasSize - logoSize.width;
+      top = canvasSize - logoSize.height;
       break;
 
     default:

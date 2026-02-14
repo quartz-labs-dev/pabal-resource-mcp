@@ -17,10 +17,12 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
-import { GoogleGenAI } from "@google/genai";
 import { findRegisteredApp } from "../../utils/registered-apps.util.js";
 import { getIconsDir, getBaseIconPath } from "./utils/icon-specs.util.js";
-import { getGeminiApiKey } from "../../utils/config.util.js";
+import {
+  getGeminiClient,
+  readImageAsBase64,
+} from "./utils/gemini.util.js";
 
 const TOOL_NAME = "stylize-app-icon";
 
@@ -128,35 +130,6 @@ function validateApp(appName: string): { slug: string; name: string } {
     slug: app.slug,
     name: app.name || app.slug,
   };
-}
-
-/**
- * Get Gemini API client
- */
-function getGeminiClient(): GoogleGenAI {
-  const apiKey = getGeminiApiKey();
-  return new GoogleGenAI({ apiKey });
-}
-
-/**
- * Read image file and convert to base64
- */
-function readImageAsBase64(imagePath: string): {
-  data: string;
-  mimeType: string;
-} {
-  const buffer = fs.readFileSync(imagePath);
-  const base64 = buffer.toString("base64");
-
-  const ext = path.extname(imagePath).toLowerCase();
-  let mimeType = "image/png";
-  if (ext === ".jpg" || ext === ".jpeg") {
-    mimeType = "image/jpeg";
-  } else if (ext === ".webp") {
-    mimeType = "image/webp";
-  }
-
-  return { data: base64, mimeType };
 }
 
 /**

@@ -411,12 +411,17 @@ export async function handleGenerateAppIcons(
   // Get style-specific config defaults if available
   const styleConfig =
     styleFolder && appInfo.config?.appIcon?.styles?.[styleFolder];
+
+  // Ensure styleConfig is a valid object, not an empty string
+  const validStyleConfig =
+    styleConfig && typeof styleConfig === 'object' ? styleConfig : undefined;
+
   const defaultBgColor =
-    styleConfig?.backgroundColor ||
+    validStyleConfig?.backgroundColor ||
     appInfo.config?.appIcon?.defaultBackgroundColor ||
     "#FFFFFF"; // iOS icons default to white background
   const defaultAlignment =
-    styleConfig?.alignment ||
+    validStyleConfig?.alignment ||
     appInfo.config?.appIcon?.defaultAlignment ||
     "center";
 
@@ -426,7 +431,7 @@ export async function handleGenerateAppIcons(
 
   if (styleFolder) {
     results.push(`🎨 Style: ${styleFolder}`);
-    if (styleConfig) {
+    if (validStyleConfig) {
       results.push(`   Using style-specific defaults from config`);
     }
   }
@@ -570,9 +575,11 @@ export async function handleGenerateAppIcons(
   results.push(`\n✅ Icon generation complete!`);
 
   // Check if notification icon was generated and add reminder
-  const hasNotificationIcon = generationResult.results.some(
-    (r) => r.iconType === "android-notification-icon" && r.success
-  );
+  const hasNotificationIcon =
+    tasks.some((t) => t.iconType === "android-notification-icon") &&
+    !generationResult.errors.some(
+      (e) => e.iconType === "android-notification-icon"
+    );
 
   if (hasNotificationIcon && !useAiMasking) {
     results.push(
