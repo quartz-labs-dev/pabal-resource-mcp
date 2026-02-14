@@ -90,14 +90,14 @@ export async function resizeIconWithSafeZone(
     throw new Error(`Invalid logo dimensions after trimming: ${inputPath}`);
   }
 
-  // Step 3: Calculate safe zone boundaries
+  // Step 3: Calculate safe zone boundaries (all values must be integers for Sharp)
   const canvasSize = spec.size;
   const safeZoneRadius = spec.safeZoneRadius || (canvasSize * 0.8) / 2;
   const center = canvasSize / 2;
-  const safeZoneLeft = center - safeZoneRadius;
-  const safeZoneRight = center + safeZoneRadius;
-  const safeZoneTop = center - safeZoneRadius;
-  const safeZoneBottom = center + safeZoneRadius;
+  const safeZoneLeft = Math.floor(center - safeZoneRadius);
+  const safeZoneRight = Math.floor(center + safeZoneRadius);
+  const safeZoneTop = Math.floor(center - safeZoneRadius);
+  const safeZoneBottom = Math.floor(center + safeZoneRadius);
 
   // Step 4: Calculate available area based on alignment
   const { availableWidth, availableHeight, left, top } = calculateAlignmentArea(
@@ -429,42 +429,42 @@ function calculateFinalPosition(
   let left: number;
   let top: number;
 
-  // Horizontal positioning
+  // Horizontal positioning (all values must be integers for Sharp)
   switch (alignment) {
     case "left":
     case "top-left":
     case "bottom-left":
       // Align logo to left edge of available area
-      left = areaLeft;
+      left = Math.floor(areaLeft);
       break;
     case "right":
     case "top-right":
     case "bottom-right":
       // Align logo to right edge of available area
-      left = areaLeft + areaWidth - logoWidth;
+      left = Math.floor(areaLeft + areaWidth - logoWidth);
       break;
     default:
       // Center horizontally
-      left = areaLeft + Math.floor((areaWidth - logoWidth) / 2);
+      left = Math.floor(areaLeft + (areaWidth - logoWidth) / 2);
   }
 
-  // Vertical positioning
+  // Vertical positioning (all values must be integers for Sharp)
   switch (alignment) {
     case "top":
     case "top-left":
     case "top-right":
       // Align logo to top edge of available area
-      top = areaTop;
+      top = Math.floor(areaTop);
       break;
     case "bottom":
     case "bottom-left":
     case "bottom-right":
       // Align logo to bottom edge of available area
-      top = areaTop + areaHeight - logoHeight;
+      top = Math.floor(areaTop + areaHeight - logoHeight);
       break;
     default:
       // Center vertically
-      top = areaTop + Math.floor((areaHeight - logoHeight) / 2);
+      top = Math.floor(areaTop + (areaHeight - logoHeight) / 2);
   }
 
   return { left, top };
