@@ -10,10 +10,16 @@ import { getGeminiClient, readImageAsBase64 } from "./gemini.util.js";
 /**
  * Apply white masking to icon using Gemini API
  * Converts the logo portion to white while making the background transparent
+ *
+ * @param inputPath - Path to the source image
+ * @param outputPath - Path to save the masked image
+ * @param targetSize - Target output size (width and height)
+ * @param logoPosition - Optional hint for logo positioning
  */
 export async function applyWhiteMasking(
   inputPath: string,
   outputPath: string,
+  targetSize: number,
   logoPosition?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -32,11 +38,12 @@ export async function applyWhiteMasking(
 
 IMPORTANT INSTRUCTIONS:
 - Convert the logo/icon portion to pure white (#FFFFFF)
-- Make the background completely transparent
-- Preserve the exact shape and details of the logo
+- Make the background completely transparent (alpha = 0)
+- Preserve the exact shape, details, and position of the logo
 - Keep the same aspect ratio and dimensions
 - Do NOT change the logo shape or design, only the colors
-- The logo should be solid white, no gradients${positionInstruction}
+- The logo should be solid white, no gradients
+- Background must be 100% transparent, not gray or any other color${positionInstruction}
 
 Generate a new icon with white logo on transparent background.`;
 
@@ -92,8 +99,17 @@ Generate a new icon with white logo on transparent background.`;
           fs.mkdirSync(outputDir, { recursive: true });
         }
 
-        // Convert to PNG and save
-        await sharp(imageBuffer).png().toFile(outputPath);
+        // Post-process with Sharp to ensure transparent background
+        const processedBuffer = await ensureTransparentBackground(imageBuffer);
+
+        // Resize to target size with transparent background, centered
+        await sharp(processedBuffer)
+          .resize(targetSize, targetSize, {
+            fit: "contain",
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+          })
+          .png()
+          .toFile(outputPath);
 
         return { success: true };
       }
@@ -110,4 +126,55 @@ Generate a new icon with white logo on transparent background.`;
       error: message,
     };
   }
+}
+
+/**
+ * Post-process AI-generated image to ensure truly transparent background
+ * Converts near-black/dark pixels to transparent while keeping white pixels
+ */
+async function ensureTransparentBackground(imageBuffer: Buffer): Promise<Buffer> {
+  // Get raw pixel data
+  const { data, info } = await sharp(imageBuffer)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const pixels = new Uint8Array(data.length);
+
+  // Process each pixel
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const a = data[i + 3];
+
+    // Calculate brightness (0-255)
+    const brightness = (r + g + b) / 3;
+
+    // If pixel is bright (white or near-white) and not already transparent
+    if (brightness > 200 && a > 10) {
+      // Keep as white, fully opaque
+      pixels[i] = 255;     // R
+      pixels[i + 1] = 255; // G
+      pixels[i + 2] = 255; // B
+      pixels[i + 3] = 255; // A (opaque)
+    } else {
+      // Make transparent
+      pixels[i] = 0;       // R
+      pixels[i + 1] = 0;   // G
+      pixels[i + 2] = 0;   // B
+      pixels[i + 3] = 0;   // A (transparent)
+    }
+  }
+
+  // Convert back to image buffer
+  return sharp(pixels, {
+    raw: {
+      width: info.width,
+      height: info.height,
+      channels: 4,
+    },
+  })
+    .png()
+    .toBuffer();
 }

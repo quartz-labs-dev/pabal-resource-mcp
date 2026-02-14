@@ -31,11 +31,9 @@ import {
 } from "./utils/icon-specs.util.js";
 import {
   resizeIconWithSafeZone,
-  resizeToExact,
   parseHexColor,
   convertToWhiteMask,
   type RgbColor,
-  type ResizeOptions,
   type LogoAlignment,
 } from "./utils/icon-resizer.util.js";
 import { applyWhiteMasking } from "./utils/icon-masking.util.js";
@@ -312,19 +310,13 @@ async function generateIcons(
       if (task.iconType === "android-notification-icon") {
         if (useAiMasking) {
           // AI-powered masking using Gemini API
-          const tempPath = task.outputPath.replace(".png", ".temp.png");
-          await resizeToExact(task.inputPath, tempPath, task.spec.size);
-
+          // Pass original image - AI masking will handle resize with transparency
           const result = await applyWhiteMasking(
-            tempPath,
+            task.inputPath,
             task.outputPath,
+            task.spec.size,
             logoPosition
           );
-
-          // Clean up temp file
-          if (fs.existsSync(tempPath)) {
-            fs.unlinkSync(tempPath);
-          }
 
           if (!result.success) {
             throw new Error(result.error || "AI white masking failed");
