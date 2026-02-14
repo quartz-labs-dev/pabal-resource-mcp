@@ -58,6 +58,14 @@ export async function getImageDimensions(
 /**
  * Resize icon to fit within a safe zone circle while maintaining aspect ratio
  * and filling the canvas to target size
+ *
+ * Alignment determines both SIZE and POSITION:
+ * - center: Logo fits within safe zone diameter
+ * - left: Logo spans from canvas left (0) to safe zone right edge
+ * - right: Logo spans from safe zone left edge to canvas right
+ * - top: Logo spans from canvas top (0) to safe zone bottom edge
+ * - bottom: Logo spans from safe zone top edge to canvas bottom
+ * - corners: Combination of horizontal and vertical rules
  */
 export async function resizeIconWithSafeZone(
   inputPath: string,
@@ -82,28 +90,41 @@ export async function resizeIconWithSafeZone(
     throw new Error(`Invalid logo dimensions after trimming: ${inputPath}`);
   }
 
-  // Step 3: Calculate the maximum size the logo can be to fit within the safe zone
-  // Safe zone is a circle, so we use diameter = 2 * radius
-  const maxLogoSize = spec.safeZoneRadius
-    ? spec.safeZoneRadius * 2
-    : spec.size * 0.8; // Default to 80% of canvas if no safe zone specified
+  // Step 3: Calculate safe zone boundaries
+  const canvasSize = spec.size;
+  const safeZoneRadius = spec.safeZoneRadius || (canvasSize * 0.8) / 2;
+  const center = canvasSize / 2;
+  const safeZoneLeft = center - safeZoneRadius;
+  const safeZoneRight = center + safeZoneRadius;
+  const safeZoneTop = center - safeZoneRadius;
+  const safeZoneBottom = center + safeZoneRadius;
 
-  // Step 4: Calculate resize dimensions maintaining aspect ratio
+  // Step 4: Calculate available area based on alignment
+  const { availableWidth, availableHeight, left, top } = calculateAlignmentArea(
+    canvasSize,
+    safeZoneLeft,
+    safeZoneRight,
+    safeZoneTop,
+    safeZoneBottom,
+    alignment
+  );
+
+  // Step 5: Calculate logo size to fit within available area (maintaining aspect ratio)
   const aspectRatio = inputWidth / inputHeight;
   let logoWidth: number;
   let logoHeight: number;
 
-  if (aspectRatio > 1) {
-    // Landscape
-    logoWidth = Math.floor(maxLogoSize);
-    logoHeight = Math.floor(maxLogoSize / aspectRatio);
+  if (aspectRatio > availableWidth / availableHeight) {
+    // Logo is wider than available area ratio - fit by width
+    logoWidth = Math.floor(availableWidth);
+    logoHeight = Math.floor(availableWidth / aspectRatio);
   } else {
-    // Portrait or square
-    logoHeight = Math.floor(maxLogoSize);
-    logoWidth = Math.floor(maxLogoSize * aspectRatio);
+    // Logo is taller than available area ratio - fit by height
+    logoHeight = Math.floor(availableHeight);
+    logoWidth = Math.floor(availableHeight * aspectRatio);
   }
 
-  // Step 5: Resize the logo
+  // Step 6: Resize the logo
   const resizedLogo = await sharp(trimmedLogo)
     .resize(logoWidth, logoHeight, {
       fit: "contain",
@@ -112,11 +133,11 @@ export async function resizeIconWithSafeZone(
     .png()
     .toBuffer();
 
-  // Step 6: Create the final canvas
+  // Step 7: Create the final canvas
   const canvas = sharp({
     create: {
-      width: spec.size,
-      height: spec.size,
+      width: canvasSize,
+      height: canvasSize,
       channels: 4,
       background:
         backgroundColor === "transparent"
@@ -125,22 +146,24 @@ export async function resizeIconWithSafeZone(
     },
   });
 
-  // Step 7: Calculate position based on alignment
-  const safeZoneRadius = spec.safeZoneRadius || (spec.size * 0.8) / 2;
-  const position = calculatePosition(
-    spec.size,
-    { width: logoWidth, height: logoHeight },
-    safeZoneRadius,
+  // Step 8: Calculate final position (align within available area)
+  const finalPosition = calculateFinalPosition(
+    left,
+    top,
+    availableWidth,
+    availableHeight,
+    logoWidth,
+    logoHeight,
     alignment
   );
 
-  // Step 8: Composite the logo onto the canvas
+  // Step 9: Composite the logo onto the canvas
   await canvas
     .composite([
       {
         input: resizedLogo,
-        left: position.left,
-        top: position.top,
+        left: finalPosition.left,
+        top: finalPosition.top,
       },
     ])
     .png()
@@ -177,9 +200,6 @@ export async function detectBackgroundColor(
   imagePath: string
 ): Promise<RgbColor> {
   const image = sharp(imagePath);
-  const metadata = await image.metadata();
-  const width = metadata.width || 100;
-  const height = metadata.height || 100;
 
   // Sample a small region from top-left corner
   const sampleSize = 10;
@@ -280,76 +300,172 @@ export async function convertToWhiteMask(
 }
 
 /**
- * Calculate position based on alignment and sizes
+ * Calculate available area based on alignment
+ *
+ * The available area determines how large the logo can be:
+ * - center: Logo fits within safe zone diameter (default behavior)
+ * - left: Logo spans from canvas left (0) to safe zone right edge
+ * - right: Logo spans from safe zone left edge to canvas right edge
+ * - top: Logo spans from canvas top (0) to safe zone bottom edge
+ * - bottom: Logo spans from safe zone top edge to canvas bottom edge
+ * - corners: Combination of horizontal and vertical rules
  */
-function calculatePosition(
+function calculateAlignmentArea(
   canvasSize: number,
-  logoSize: { width: number; height: number },
-  safeZoneRadius: number,
+  safeZoneLeft: number,
+  safeZoneRight: number,
+  safeZoneTop: number,
+  safeZoneBottom: number,
+  alignment: LogoAlignment
+): { availableWidth: number; availableHeight: number; left: number; top: number } {
+  // Safe zone diameter (for center alignment)
+  const safeZoneDiameter = safeZoneRight - safeZoneLeft;
+
+  switch (alignment) {
+    case "center":
+      return {
+        availableWidth: safeZoneDiameter,
+        availableHeight: safeZoneDiameter,
+        left: safeZoneLeft,
+        top: safeZoneTop,
+      };
+
+    case "left":
+      // Logo: left edge at 0, right edge at safeZoneRight
+      return {
+        availableWidth: safeZoneRight,
+        availableHeight: safeZoneDiameter,
+        left: 0,
+        top: safeZoneTop,
+      };
+
+    case "right":
+      // Logo: left edge at safeZoneLeft, right edge at canvasSize
+      return {
+        availableWidth: canvasSize - safeZoneLeft,
+        availableHeight: safeZoneDiameter,
+        left: safeZoneLeft,
+        top: safeZoneTop,
+      };
+
+    case "top":
+      // Logo: top edge at 0, bottom edge at safeZoneBottom
+      return {
+        availableWidth: safeZoneDiameter,
+        availableHeight: safeZoneBottom,
+        left: safeZoneLeft,
+        top: 0,
+      };
+
+    case "bottom":
+      // Logo: top edge at safeZoneTop, bottom edge at canvasSize
+      return {
+        availableWidth: safeZoneDiameter,
+        availableHeight: canvasSize - safeZoneTop,
+        left: safeZoneLeft,
+        top: safeZoneTop,
+      };
+
+    case "top-left":
+      return {
+        availableWidth: safeZoneRight,
+        availableHeight: safeZoneBottom,
+        left: 0,
+        top: 0,
+      };
+
+    case "top-right":
+      return {
+        availableWidth: canvasSize - safeZoneLeft,
+        availableHeight: safeZoneBottom,
+        left: safeZoneLeft,
+        top: 0,
+      };
+
+    case "bottom-left":
+      return {
+        availableWidth: safeZoneRight,
+        availableHeight: canvasSize - safeZoneTop,
+        left: 0,
+        top: safeZoneTop,
+      };
+
+    case "bottom-right":
+      return {
+        availableWidth: canvasSize - safeZoneLeft,
+        availableHeight: canvasSize - safeZoneTop,
+        left: safeZoneLeft,
+        top: safeZoneTop,
+      };
+
+    default:
+      // Default to center
+      return {
+        availableWidth: safeZoneDiameter,
+        availableHeight: safeZoneDiameter,
+        left: safeZoneLeft,
+        top: safeZoneTop,
+      };
+  }
+}
+
+/**
+ * Calculate final position within the available area
+ *
+ * This positions the logo at the correct edge of the available area:
+ * - right alignment: logo's right edge touches available area's right edge
+ * - left alignment: logo's left edge touches available area's left edge
+ * - etc.
+ */
+function calculateFinalPosition(
+  areaLeft: number,
+  areaTop: number,
+  areaWidth: number,
+  areaHeight: number,
+  logoWidth: number,
+  logoHeight: number,
   alignment: LogoAlignment
 ): { left: number; top: number } {
   let left: number;
   let top: number;
 
+  // Horizontal positioning
   switch (alignment) {
-    case "center":
-      left = Math.floor((canvasSize - logoSize.width) / 2);
-      top = Math.floor((canvasSize - logoSize.height) / 2);
-      break;
-
     case "left":
-      // Left edge of logo aligns with left edge of canvas
-      left = 0;
-      top = Math.floor((canvasSize - logoSize.height) / 2);
-      break;
-
-    case "right":
-      // Right edge of logo aligns with right edge of canvas
-      left = canvasSize - logoSize.width;
-      top = Math.floor((canvasSize - logoSize.height) / 2);
-      break;
-
-    case "top":
-      left = Math.floor((canvasSize - logoSize.width) / 2);
-      // Top edge of logo aligns with top edge of canvas
-      top = 0;
-      break;
-
-    case "bottom":
-      left = Math.floor((canvasSize - logoSize.width) / 2);
-      // Bottom edge of logo aligns with bottom edge of canvas
-      top = canvasSize - logoSize.height;
-      break;
-
     case "top-left":
-      left = 0;
-      top = 0;
-      break;
-
-    case "top-right":
-      left = canvasSize - logoSize.width;
-      top = 0;
-      break;
-
     case "bottom-left":
-      left = 0;
-      top = canvasSize - logoSize.height;
+      // Align logo to left edge of available area
+      left = areaLeft;
       break;
-
+    case "right":
+    case "top-right":
     case "bottom-right":
-      left = canvasSize - logoSize.width;
-      top = canvasSize - logoSize.height;
+      // Align logo to right edge of available area
+      left = areaLeft + areaWidth - logoWidth;
       break;
-
     default:
-      // Default to center
-      left = Math.floor((canvasSize - logoSize.width) / 2);
-      top = Math.floor((canvasSize - logoSize.height) / 2);
+      // Center horizontally
+      left = areaLeft + Math.floor((areaWidth - logoWidth) / 2);
   }
 
-  // Ensure logo stays within canvas
-  left = Math.max(0, Math.min(left, canvasSize - logoSize.width));
-  top = Math.max(0, Math.min(top, canvasSize - logoSize.height));
+  // Vertical positioning
+  switch (alignment) {
+    case "top":
+    case "top-left":
+    case "top-right":
+      // Align logo to top edge of available area
+      top = areaTop;
+      break;
+    case "bottom":
+    case "bottom-left":
+    case "bottom-right":
+      // Align logo to bottom edge of available area
+      top = areaTop + areaHeight - logoHeight;
+      break;
+    default:
+      // Center vertically
+      top = areaTop + Math.floor((areaHeight - logoHeight) / 2);
+  }
 
   return { left, top };
 }
