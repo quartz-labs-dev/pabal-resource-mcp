@@ -92,21 +92,14 @@ export const generateAppIconsInputSchema = z.object({
       "Logo alignment within the canvas (default: center or config default). " +
         "Affects how the logo is positioned relative to the safe zone."
     ),
-  useAiMasking: z
+  useAlphaMasking: z
     .boolean()
     .optional()
     .default(false)
     .describe(
-      "Use Gemini API for intelligent white masking on notification icon (default: false). " +
-        "When false, uses Sharp-based threshold conversion (faster, free, no API key needed). " +
-        "When true, uses Gemini AI for more sophisticated logo extraction (requires GEMINI_API_KEY)."
-    ),
-  logoPosition: z
-    .string()
-    .optional()
-    .describe(
-      "Additional prompt for logo positioning when using AI masking (e.g., 'centered', 'slightly above center'). " +
-        "Only used when useAiMasking is true."
+      "Use alpha channel for white masking (default: false). " +
+        "When false, uses Sharp-based threshold conversion (converts bright pixels to white). " +
+        "When true, uses original image's alpha channel (preserves exact logo shape)."
     ),
   skipExisting: z
     .boolean()
@@ -151,20 +144,20 @@ export const generateAppIconsTool = {
 - **Automatic Padding Removal**: Extracts actual logo from icon.png (removes surrounding padding)
 - **Smart Safe Zone Positioning**: Logo automatically fits within platform-specific circles
 - **Flexible Alignment**: Position logo center/left/right/top/bottom relative to safe zone
-- **White Masking**: Sharp-based (default, fast, free) or AI-powered (Gemini, more sophisticated)
+- **White Masking**: Threshold-based (default) or alpha-based (preserves exact shape)
 - **Custom Background**: Only applies to ios-light.png. Others (adaptive-icon, splash, notification) are transparent
 - **Style Variants**: Generate themed icons (christmas, halloween, etc.) with style-specific defaults
 - **Config Integration**: Uses config.json appIcon settings for default colors and alignment
 
 **White Masking Options:**
-- **Default (useAiMasking=false)**: Sharp threshold conversion - fast, free, no API key needed
-- **AI-Powered (useAiMasking=true)**: Gemini API - more sophisticated, requires GEMINI_API_KEY
+- **Default (useAlphaMasking=false)**: Threshold conversion - converts bright pixels to white
+- **Alpha-based (useAlphaMasking=true)**: Uses original alpha channel - preserves exact logo shape
 
 **⚠️ Important: After Generation**
 After generating icons, always check **android-notification-icon.png**:
-- If white masking is not clean (unwanted artifacts, incomplete conversion, or poor contrast)
-- Regenerate with \`useAiMasking: true\` for better AI-powered masking
-- Example: \`{ "appName": "my-app", "useAiMasking": true, "iconTypes": ["android-notification-icon"] }\`
+- If white masking is not clean (unwanted artifacts or shape issues)
+- Regenerate with \`useAlphaMasking: true\` for alpha-based masking
+- Example: \`{ "appName": "my-app", "useAlphaMasking": true, "iconTypes": ["android-notification-icon"] }\`
 
 **Example:**
 \`\`\`
@@ -173,7 +166,7 @@ INPUT:  my-app/icons/icon.png (source logo with padding)
 OUTPUT: my-app/icons/ios-light.png (logo centered in safe zone)
         my-app/icons/adaptive-icon.png (logo aligned as specified)
         my-app/icons/splash-icon-light.png
-        my-app/icons/android-notification-icon.png (white mask, Sharp or AI)
+        my-app/icons/android-notification-icon.png (white mask)
 
 With styleFolder='christmas':
 INPUT:  my-app/icons/christmas/icon.png
@@ -275,8 +268,7 @@ async function generateIcons(
   tasks: GenerationTask[],
   backgroundColor: RgbColor | "transparent",
   logoAlignment: LogoAlignment,
-  useAiMasking: boolean,
-  logoPosition?: string,
+  useAlphaMasking: boolean,
   onProgress?: (progress: GenerationProgress) => void
 ): Promise<{
   total: number;
@@ -308,14 +300,12 @@ async function generateIcons(
 
       // Special handling for notification icon (needs white masking)
       if (task.iconType === "android-notification-icon") {
-        if (useAiMasking) {
-          // AI-powered masking using Gemini API
-          // Pass original image - AI masking will handle resize with transparency
+        if (useAlphaMasking) {
+          // Alpha-based masking - converts logo to white using original alpha channel
           const result = await applyWhiteMasking(
             task.inputPath,
             task.outputPath,
-            task.spec.size,
-            logoPosition
+            task.spec.size
           );
 
           if (!result.success) {
@@ -376,8 +366,7 @@ export async function handleGenerateAppIcons(
     styleFolder,
     backgroundColor: bgColorInput,
     logoAlignment: logoAlignmentInput,
-    useAiMasking = false,
-    logoPosition,
+    useAlphaMasking = false,
     skipExisting = false,
     dryRun = false,
   } = input;
@@ -449,13 +438,10 @@ export async function handleGenerateAppIcons(
   results.push(`🎯 Icon types: ${iconTypes.join(", ")}`);
   results.push(`📐 Logo alignment: ${logoAlignment}`);
 
-  if (useAiMasking) {
-    results.push(`🤖 AI masking: enabled (uses Gemini API)`);
-    if (logoPosition) {
-      results.push(`📍 Logo positioning: ${logoPosition}`);
-    }
+  if (useAlphaMasking) {
+    results.push(`🎭 White masking: alpha-based (preserves exact shape)`);
   } else {
-    results.push(`⚡ AI masking: disabled (uses Sharp threshold)`);
+    results.push(`🎭 White masking: threshold-based (converts bright pixels)`);
   }
 
   // Step 4: Build generation tasks
@@ -531,8 +517,7 @@ export async function handleGenerateAppIcons(
     tasks,
     bgColor,
     logoAlignment,
-    useAiMasking,
-    logoPosition,
+    useAlphaMasking,
     (progress) => {
       const progressPrefix = `[${progress.current}/${progress.total}]`;
       if (progress.status === "generating") {
@@ -573,15 +558,15 @@ export async function handleGenerateAppIcons(
       (e) => e.iconType === "android-notification-icon"
     );
 
-  if (hasNotificationIcon && !useAiMasking) {
+  if (hasNotificationIcon && !useAlphaMasking) {
     results.push(
       `\n⚠️  IMPORTANT: Check android-notification-icon.png`
     );
     results.push(
-      `   If white masking looks incorrect (artifacts, incomplete conversion, poor contrast):`
+      `   If the shape is not correct, regenerate with alpha masking:`
     );
     results.push(
-      `   Regenerate with AI masking: { "appName": "${appInfo.slug}", "useAiMasking": true, "iconTypes": ["android-notification-icon"]${styleFolder ? `, "styleFolder": "${styleFolder}"` : ""} }`
+      `   { "appName": "${appInfo.slug}", "useAlphaMasking": true, "iconTypes": ["android-notification-icon"]${styleFolder ? `, "styleFolder": "${styleFolder}"` : ""} }`
     );
   }
 
