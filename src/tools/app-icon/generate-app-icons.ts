@@ -544,11 +544,11 @@ export async function handleGenerateAppIcons(
     (progress) => {
       const progressPrefix = `[${progress.current}/${progress.total}]`;
       if (progress.status === "generating") {
-        console.log(`🔄 ${progressPrefix} Generating ${progress.iconType}...`);
+        console.warn(`🔄 ${progressPrefix} Generating ${progress.iconType}...`);
       } else if (progress.status === "completed") {
-        console.log(`✅ ${progressPrefix} ${progress.iconType}`);
+        console.warn(`✅ ${progressPrefix} ${progress.iconType}`);
       } else if (progress.status === "failed") {
-        console.log(
+        console.error(
           `❌ ${progressPrefix} ${progress.iconType}: ${progress.error}`
         );
       }

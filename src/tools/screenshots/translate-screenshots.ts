@@ -517,15 +517,15 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
     (progress: TranslationProgress) => {
       const progressPrefix = `[${progress.current}/${progress.total}]`;
       if (progress.status === "translating") {
-        console.log(
+        console.warn(
           `🔄 ${progressPrefix} Translating ${progress.targetLocale}/${progress.deviceType}/${progress.filename}...`
         );
       } else if (progress.status === "completed") {
-        console.log(
+        console.warn(
           `✅ ${progressPrefix} ${progress.targetLocale}/${progress.deviceType}/raw/${progress.filename}`
         );
       } else if (progress.status === "failed") {
-        console.log(
+        console.error(
           `❌ ${progressPrefix} ${progress.targetLocale}/${progress.deviceType}/${progress.filename}: ${progress.error}`
         );
       }

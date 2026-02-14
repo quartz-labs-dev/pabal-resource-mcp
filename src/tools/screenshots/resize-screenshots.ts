@@ -545,20 +545,20 @@ Available locales with raw/: ${allRawLocales.join(", ")}`,
   const resizeResult = await batchResizeFromRaw(tasks, bgColor, (progress) => {
     const progressPrefix = `[${progress.current}/${progress.total}]`;
     if (progress.status === "resizing") {
-      console.log(
+      console.warn(
         `🔄 ${progressPrefix} Resizing ${progress.locale}/${progress.deviceType}/${progress.filename}...`
       );
     } else if (progress.status === "completed" && progress.dimensions) {
       const { raw, final } = progress.dimensions;
-      console.log(
+      console.warn(
         `✅ ${progressPrefix} ${progress.locale}/${progress.deviceType}/${progress.filename} (${raw.width}x${raw.height} -> ${final.width}x${final.height})`
       );
     } else if (progress.status === "skipped") {
-      console.log(
+      console.warn(
         `⏭️ ${progressPrefix} ${progress.locale}/${progress.deviceType}/${progress.filename} (raw not found)`
       );
     } else if (progress.status === "failed") {
-      console.log(
+      console.error(
         `❌ ${progressPrefix} ${progress.locale}/${progress.deviceType}/${progress.filename}: ${progress.error}`
       );
     }

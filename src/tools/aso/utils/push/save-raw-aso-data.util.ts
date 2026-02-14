@@ -36,7 +36,7 @@ export function saveRawAsoData(
   }
 
   if (localeCounts.googlePlay) {
-    console.log(
+    console.warn(
       `💾 Google Play raw data saved to ${rootDir} (${
         localeCounts.googlePlay
       } locale${localeCounts.googlePlay > 1 ? "s" : ""})`
@@ -44,7 +44,7 @@ export function saveRawAsoData(
   }
 
   if (localeCounts.appStore) {
-    console.log(
+    console.warn(
       `💾 App Store raw data saved to ${rootDir} (${
         localeCounts.appStore
       } locale${localeCounts.appStore > 1 ? "s" : ""})`

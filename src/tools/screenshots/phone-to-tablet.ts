@@ -579,15 +579,15 @@ export async function handlePhoneToTablet(
     (progress: ConversionProgress) => {
       const progressPrefix = `[${progress.current}/${progress.total}]`;
       if (progress.status === "converting") {
-        console.log(
+        console.warn(
           `🔄 ${progressPrefix} Converting ${progress.locale}/phone/${progress.filename} to tablet...`
         );
       } else if (progress.status === "completed") {
-        console.log(
+        console.warn(
           `✅ ${progressPrefix} ${progress.locale}/tablet/raw/${progress.filename}`
         );
       } else if (progress.status === "failed") {
-        console.log(
+        console.error(
           `❌ ${progressPrefix} ${progress.locale}/${progress.filename}: ${progress.error}`
         );
       }
