@@ -34,18 +34,12 @@ export async function applyWhiteMasking(
       : "";
 
     // Create the masking prompt
-    const prompt = `This is an app icon. Please convert it to a white logo on transparent background for Android notification icon.
+    const prompt = `Convert this icon into a simple white Android notification icon.
 
-IMPORTANT INSTRUCTIONS:
-- Convert the logo/icon portion to pure white (#FFFFFF)
-- Make the background completely transparent (alpha = 0)
-- Preserve the exact shape, details, and position of the logo
-- Keep the same aspect ratio and dimensions
-- Do NOT change the logo shape or design, only the colors
-- The logo should be solid white, no gradients
-- Background must be 100% transparent, not gray or any other color${positionInstruction}
-
-Generate a new icon with white logo on transparent background.`;
+Requirements:
+- White logo (#FFFFFF) on transparent background
+- Preserve the logo shape exactly
+- No gradients, solid white only${positionInstruction}`;
 
     // Create chat session for image editing
     const chat = client.chats.create({
