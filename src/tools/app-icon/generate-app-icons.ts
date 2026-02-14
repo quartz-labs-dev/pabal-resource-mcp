@@ -74,8 +74,8 @@ export const generateAppIconsInputSchema = z.object({
     .string()
     .optional()
     .describe(
-      'Background color as hex (e.g., "#FFFFFF") or "transparent" (default: transparent or config default). ' +
-        "Only applies to icons with backgrounds (iOS, adaptive, splash). Notification icon is always transparent."
+      'Background color as hex (e.g., "#FFFFFF") or "transparent" (default: white "#FFFFFF" or config default). ' +
+        "Only applies to ios-light.png. Other icons (adaptive, splash, notification) are always transparent."
     ),
   logoAlignment: z
     .enum([
@@ -154,7 +154,7 @@ export const generateAppIconsTool = {
 - **Smart Safe Zone Positioning**: Logo automatically fits within platform-specific circles
 - **Flexible Alignment**: Position logo center/left/right/top/bottom relative to safe zone
 - **White Masking**: Sharp-based (default, fast, free) or AI-powered (Gemini, more sophisticated)
-- **Custom Background**: Hex colors or transparent backgrounds
+- **Custom Background**: Only applies to ios-light.png. Others (adaptive-icon, splash, notification) are transparent
 - **Style Variants**: Generate themed icons (christmas, halloween, etc.) with style-specific defaults
 - **Config Integration**: Uses config.json appIcon settings for default colors and alignment
 
@@ -344,11 +344,15 @@ async function generateIcons(
         }
       } else {
         // Regular icons with safe zone positioning and alignment
+        // Only apply background color to iOS icon, others are transparent
+        const iconBgColor =
+          task.iconType === "ios-light" ? backgroundColor : "transparent";
+
         await resizeIconWithSafeZone(
           task.inputPath,
           task.outputPath,
           task.spec,
-          { backgroundColor, alignment: logoAlignment }
+          { backgroundColor: iconBgColor, alignment: logoAlignment }
         );
       }
 
@@ -410,7 +414,7 @@ export async function handleGenerateAppIcons(
   const defaultBgColor =
     styleConfig?.backgroundColor ||
     appInfo.config?.appIcon?.defaultBackgroundColor ||
-    "transparent";
+    "#FFFFFF"; // iOS icons default to white background
   const defaultAlignment =
     styleConfig?.alignment ||
     appInfo.config?.appIcon?.defaultAlignment ||

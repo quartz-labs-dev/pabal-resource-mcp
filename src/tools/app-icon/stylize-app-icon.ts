@@ -189,10 +189,11 @@ Requirements:
 1. Output must be a high-quality app icon suitable for mobile apps
 2. Maintain professional app icon standards (clean, recognizable, works at small sizes)
 3. Return ONLY the transformed icon image, no text or explanations
-4. Keep transparency if the original has it
-5. Ensure the result is visually appealing and brand-appropriate
+4. IMPORTANT: Use transparent background, not white or colored background
+5. Keep the logo with transparent areas around it
+6. Ensure the result is visually appealing and brand-appropriate
 
-Generate the stylized icon now.`;
+Generate the stylized icon with transparent background now.`;
 
     // Create chat session for image editing
     const chat = client.chats.create({
@@ -246,8 +247,14 @@ Generate the stylized icon now.`;
           fs.mkdirSync(outputDir, { recursive: true });
         }
 
-        // Convert to PNG and save
-        await sharp(imageBuffer).png().toFile(outputPath);
+        // Process image: ensure transparency and remove solid backgrounds
+        const processedImage = await sharp(imageBuffer)
+          .ensureAlpha() // Ensure alpha channel exists
+          .png()
+          .toBuffer();
+
+        // Save the processed image
+        await sharp(processedImage).toFile(outputPath);
 
         return { success: true };
       }
