@@ -36,7 +36,6 @@ import {
   type RgbColor,
   type LogoAlignment,
 } from "./utils/icon-resizer.util.js";
-import { applyWhiteMasking } from "./utils/icon-masking.util.js";
 import type { ProductConfig } from "../../types/products/product-config.types.js";
 
 const TOOL_NAME = "generate-app-icons";
@@ -92,15 +91,6 @@ export const generateAppIconsInputSchema = z.object({
       "Logo alignment within the canvas (default: center or config default). " +
         "Affects how the logo is positioned relative to the safe zone."
     ),
-  useAlphaMasking: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe(
-      "Use alpha channel for white masking (default: false). " +
-        "When false, uses Sharp-based threshold conversion (converts bright pixels to white). " +
-        "When true, uses original image's alpha channel (preserves exact logo shape)."
-    ),
   skipExisting: z
     .boolean()
     .optional()
@@ -148,16 +138,6 @@ export const generateAppIconsTool = {
 - **Custom Background**: Only applies to ios-light.png. Others (adaptive-icon, splash, notification) are transparent
 - **Style Variants**: Generate themed icons (christmas, halloween, etc.) with style-specific defaults
 - **Config Integration**: Uses config.json appIcon settings for default colors and alignment
-
-**White Masking Options:**
-- **Default (useAlphaMasking=false)**: Threshold conversion - converts bright pixels to white
-- **Alpha-based (useAlphaMasking=true)**: Uses original alpha channel - preserves exact logo shape
-
-**⚠️ Important: After Generation**
-After generating icons, always check **android-notification-icon.png**:
-- If white masking is not clean (unwanted artifacts or shape issues)
-- Regenerate with \`useAlphaMasking: true\` for alpha-based masking
-- Example: \`{ "appName": "my-app", "useAlphaMasking": true, "iconTypes": ["android-notification-icon"] }\`
 
 **Example:**
 \`\`\`
@@ -268,7 +248,6 @@ async function generateIcons(
   tasks: GenerationTask[],
   backgroundColor: RgbColor | "transparent",
   logoAlignment: LogoAlignment,
-  useAlphaMasking: boolean,
   onProgress?: (progress: GenerationProgress) => void
 ): Promise<{
   total: number;
@@ -300,30 +279,17 @@ async function generateIcons(
 
       // Special handling for notification icon (needs white masking)
       if (task.iconType === "android-notification-icon") {
-        if (useAlphaMasking) {
-          // Alpha-based masking - converts logo to white using original alpha channel
-          const result = await applyWhiteMasking(
-            task.inputPath,
-            task.outputPath,
-            task.spec.size
-          );
+        // Convert to white logo on transparent background
+        const whiteMask = await convertToWhiteMask(task.inputPath);
 
-          if (!result.success) {
-            throw new Error(result.error || "AI white masking failed");
-          }
-        } else {
-          // Sharp-based threshold conversion (default, faster, free)
-          const whiteMask = await convertToWhiteMask(task.inputPath);
-
-          // Resize to target size
-          await sharp(whiteMask)
-            .resize(task.spec.size, task.spec.size, {
-              fit: "contain",
-              background: { r: 0, g: 0, b: 0, alpha: 0 },
-            })
-            .png()
-            .toFile(task.outputPath);
-        }
+        // Resize to target size
+        await sharp(whiteMask)
+          .resize(task.spec.size, task.spec.size, {
+            fit: "contain",
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+          })
+          .png()
+          .toFile(task.outputPath);
       } else {
         // Regular icons with safe zone positioning and alignment
         // Only apply background color to iOS icon, others are transparent
@@ -366,7 +332,6 @@ export async function handleGenerateAppIcons(
     styleFolder,
     backgroundColor: bgColorInput,
     logoAlignment: logoAlignmentInput,
-    useAlphaMasking = false,
     skipExisting = false,
     dryRun = false,
   } = input;
@@ -437,12 +402,6 @@ export async function handleGenerateAppIcons(
   const iconTypes = requestedIconTypes || ALL_ICON_TYPES;
   results.push(`🎯 Icon types: ${iconTypes.join(", ")}`);
   results.push(`📐 Logo alignment: ${logoAlignment}`);
-
-  if (useAlphaMasking) {
-    results.push(`🎭 White masking: alpha-based (preserves exact shape)`);
-  } else {
-    results.push(`🎭 White masking: threshold-based (converts bright pixels)`);
-  }
 
   // Step 4: Build generation tasks
   let tasks: GenerationTask[];
@@ -517,7 +476,6 @@ export async function handleGenerateAppIcons(
     tasks,
     bgColor,
     logoAlignment,
-    useAlphaMasking,
     (progress) => {
       const progressPrefix = `[${progress.current}/${progress.total}]`;
       if (progress.status === "generating") {
@@ -550,25 +508,6 @@ export async function handleGenerateAppIcons(
   const iconsDir = getIconsDir(appInfo.slug, styleFolder);
   results.push(`\n📁 Output location: ${iconsDir}/`);
   results.push(`\n✅ Icon generation complete!`);
-
-  // Check if notification icon was generated and add reminder
-  const hasNotificationIcon =
-    tasks.some((t) => t.iconType === "android-notification-icon") &&
-    !generationResult.errors.some(
-      (e) => e.iconType === "android-notification-icon"
-    );
-
-  if (hasNotificationIcon && !useAlphaMasking) {
-    results.push(
-      `\n⚠️  IMPORTANT: Check android-notification-icon.png`
-    );
-    results.push(
-      `   If the shape is not correct, regenerate with alpha masking:`
-    );
-    results.push(
-      `   { "appName": "${appInfo.slug}", "useAlphaMasking": true, "iconTypes": ["android-notification-icon"]${styleFolder ? `, "styleFolder": "${styleFolder}"` : ""} }`
-    );
-  }
 
   return {
     content: [

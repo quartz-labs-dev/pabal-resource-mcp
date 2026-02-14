@@ -245,48 +245,38 @@ export async function trimIconPadding(
 }
 
 /**
- * Convert logo to white on transparent background using Sharp (no AI)
- * Simple threshold-based conversion
+ * Convert logo to white on transparent background
+ * Uses original alpha channel to preserve exact logo shape
  */
-export async function convertToWhiteMask(
-  inputPath: string,
-  threshold: number = 128
-): Promise<Buffer> {
-  // 1. Convert to grayscale
-  const grayscale = await sharp(inputPath)
-    .greyscale()
-    .toBuffer();
-
-  // 2. Apply threshold to create binary mask
-  // Pixels above threshold become white, below become transparent
-  const { data, info } = await sharp(grayscale)
+export async function convertToWhiteMask(inputPath: string): Promise<Buffer> {
+  // Get raw pixel data from original image
+  const { data, info } = await sharp(inputPath)
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  // 3. Create white logo on transparent background
   const pixels = new Uint8Array(data.length);
 
+  // Convert non-transparent pixels to white
   for (let i = 0; i < data.length; i += 4) {
-    const gray = data[i]; // R channel (same as G and B in grayscale)
     const alpha = data[i + 3];
 
-    // If pixel is not transparent and above threshold, make it white
-    if (alpha > 10 && gray > threshold) {
+    if (alpha > 10) {
+      // Has content - make white
       pixels[i] = 255;     // R
       pixels[i + 1] = 255; // G
       pixels[i + 2] = 255; // B
       pixels[i + 3] = 255; // A (opaque)
     } else {
-      pixels[i] = 0;       // R
-      pixels[i + 1] = 0;   // G
-      pixels[i + 2] = 0;   // B
-      pixels[i + 3] = 0;   // A (transparent)
+      // Transparent - keep transparent
+      pixels[i] = 0;
+      pixels[i + 1] = 0;
+      pixels[i + 2] = 0;
+      pixels[i + 3] = 0;
     }
   }
 
-  // 4. Convert back to image
-  const whiteMask = await sharp(pixels, {
+  return sharp(pixels, {
     raw: {
       width: info.width,
       height: info.height,
@@ -295,8 +285,6 @@ export async function convertToWhiteMask(
   })
     .png()
     .toBuffer();
-
-  return whiteMask;
 }
 
 /**
