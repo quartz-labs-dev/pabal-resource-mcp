@@ -1,5 +1,15 @@
 #!/usr/bin/env node
 
+// Redirect console.log and console.info to stderr
+// This prevents third-party libraries from corrupting
+// the stdout JSON-RPC stream required by strict MCP clients (like Antigravity).
+console.log = function (...args: unknown[]) {
+  console.error(...args);
+};
+console.info = function (...args: unknown[]) {
+  console.error(...args);
+};
+
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
