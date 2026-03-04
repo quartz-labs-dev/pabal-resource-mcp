@@ -23,11 +23,11 @@ import {
 import {
   scanLocaleScreenshots,
   getScreenshotsDir,
-  ensureRawOutputDir,
   type ScreenshotInfo,
 } from "./utils/scan-screenshots.util.js";
 import {
   translateImagesWithProgress,
+  getImageModelLabel,
   type TranslationProgress,
 } from "./utils/gemini-image-translator.util.js";
 import {
@@ -35,6 +35,9 @@ import {
   type LocaleMapping,
   type GeminiTargetLocale,
 } from "./utils/locale-mapping.constants.js";
+import {
+  GEMINI_IMAGE_MODEL_VALUES,
+} from "../../utils/gemini-image-model.util.js";
 
 const TOOL_NAME = "translate-screenshots";
 
@@ -88,6 +91,13 @@ export const translateScreenshotsInputSchema = z.object({
     .describe(
       'Words to keep untranslated (e.g., brand names, product names). Example: ["Pabal", "Pro", "AI"]'
     ),
+  imageModel: z
+    .enum(GEMINI_IMAGE_MODEL_VALUES)
+    .optional()
+    .default("flash")
+    .describe(
+      "Gemini image model preference. 'flash' (default) is faster/cheaper, 'pro' prioritizes quality."
+    ),
 });
 
 export type TranslateScreenshotsInput = z.infer<
@@ -119,6 +129,10 @@ Use \`resize-screenshots\` after this tool to resize images to final dimensions.
 - GEMINI_API_KEY or GOOGLE_API_KEY environment variable must be set
 - Screenshots must be in: public/products/{slug}/screenshots/{locale}/phone/ and /tablet/
 - Locale files must exist in: public/products/{slug}/locales/
+
+**Model Selection:**
+- \`imageModel: "flash"\` (default) for speed/cost
+- \`imageModel: "pro"\` for higher instruction fidelity
 
 **Example output structure:**
 \`\`\`
@@ -285,6 +299,7 @@ export async function handleTranslateScreenshots(
     skipExisting = true,
     screenshotNumbers,
     preserveWords,
+    imageModel = "flash",
   } = input;
 
   const results: string[] = [];
@@ -349,6 +364,7 @@ export async function handleTranslateScreenshots(
   }
 
   results.push(`🎯 Target locales to translate: ${targetLocales.join(", ")}`);
+  results.push(`🧠 Image model: ${getImageModelLabel(imageModel)}`);
   if (groupedLocales.length > 0) {
     results.push(
       `📋 Grouped locales (saved together): ${groupedLocales.join(", ")}`
@@ -530,7 +546,8 @@ ${screenshotsDir}/${primaryLocale}/tablet/1.png, 2.png, ...`,
         );
       }
     },
-    preserveWords
+    preserveWords,
+    imageModel
   );
 
   results.push(`\n📊 Translation Results:`);

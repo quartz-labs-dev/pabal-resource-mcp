@@ -23,6 +23,12 @@ import {
   getGeminiClient,
   readImageAsBase64,
 } from "./utils/gemini.util.js";
+import {
+  GEMINI_IMAGE_MODEL_PRESETS,
+  GEMINI_IMAGE_MODEL_VALUES,
+  type GeminiImageModelPreference,
+} from "../../utils/gemini-image-model.util.js";
+import { generateImageWithFallback } from "../../utils/gemini-image-generation.util.js";
 
 const TOOL_NAME = "stylize-app-icon";
 
@@ -53,6 +59,13 @@ export const stylizeAppIconInputSchema = z.object({
     .describe(
       "Preserve the original icon shape and structure (default: true). " +
         "When true, only applies style elements without changing the core design."
+    ),
+  imageModel: z
+    .enum(GEMINI_IMAGE_MODEL_VALUES)
+    .optional()
+    .default("flash")
+    .describe(
+      "Gemini image model preference. 'flash' (default) is faster/cheaper, 'pro' prioritizes quality."
     ),
   dryRun: z
     .boolean()
@@ -90,6 +103,10 @@ export const stylizeAppIconTool = {
 **Requirements:**
 - GEMINI_API_KEY or GOOGLE_API_KEY environment variable
 - Base icon exists at {slug}/icons/icon.png
+
+**Model Selection:**
+- \`imageModel: "flash"\` (default) for speed/cost
+- \`imageModel: "pro"\` for higher instruction fidelity
 
 **Example Flow:**
 \`\`\`
@@ -139,7 +156,8 @@ async function stylizeIconWithAI(
   inputPath: string,
   outputPath: string,
   stylePrompt: string,
-  preserveShape: boolean
+  preserveShape: boolean,
+  imageModel: GeminiImageModelPreference = "flash"
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const client = getGeminiClient();
@@ -168,75 +186,34 @@ Requirements:
 
 Generate the stylized icon with transparent background now.`;
 
-    // Create chat session for image editing
-    const chat = client.chats.create({
-      model: "gemini-3-pro-image-preview",
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
+    const generated = await generateImageWithFallback({
+      client,
+      prompt: fullPrompt,
+      image: {
+        mimeType,
+        data: imageData,
       },
+      imageModel,
     });
 
-    // Send message with image
-    const response = await chat.sendMessage({
-      message: [
-        { text: fullPrompt },
-        {
-          inlineData: {
-            mimeType,
-            data: imageData,
-          },
-        },
-      ],
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
-      },
-    });
+    const imageBuffer = Buffer.from(generated.imageBase64, "base64");
 
-    // Extract generated image from response
-    const candidates = response.candidates;
-    if (!candidates || candidates.length === 0) {
-      return {
-        success: false,
-        error: "No response from Gemini API",
-      };
+    // Ensure output directory exists
+    const outputDir = path.dirname(outputPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const parts = candidates[0].content?.parts;
-    if (!parts) {
-      return {
-        success: false,
-        error: "No content parts in response",
-      };
-    }
+    // Process image: ensure transparency and remove solid backgrounds
+    const processedImage = await sharp(imageBuffer)
+      .ensureAlpha() // Ensure alpha channel exists
+      .png()
+      .toBuffer();
 
-    // Find image data in response
-    for (const part of parts) {
-      if (part.inlineData?.data) {
-        const imageBuffer = Buffer.from(part.inlineData.data, "base64");
+    // Save the processed image
+    await sharp(processedImage).toFile(outputPath);
 
-        // Ensure output directory exists
-        const outputDir = path.dirname(outputPath);
-        if (!fs.existsSync(outputDir)) {
-          fs.mkdirSync(outputDir, { recursive: true });
-        }
-
-        // Process image: ensure transparency and remove solid backgrounds
-        const processedImage = await sharp(imageBuffer)
-          .ensureAlpha() // Ensure alpha channel exists
-          .png()
-          .toBuffer();
-
-        // Save the processed image
-        await sharp(processedImage).toFile(outputPath);
-
-        return { success: true };
-      }
-    }
-
-    return {
-      success: false,
-      error: "No image data in Gemini response",
-    };
+    return { success: true };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {
@@ -257,6 +234,7 @@ export async function handleStylizeAppIcon(
     styleFolder,
     stylePrompt,
     preserveShape = true,
+    imageModel = "flash",
     dryRun = false,
   } = input;
 
@@ -302,6 +280,9 @@ export async function handleStylizeAppIcon(
   results.push(
     `🔧 Shape preservation: ${preserveShape ? "enabled" : "disabled"}`
   );
+  results.push(
+    `🧠 Image model: ${imageModel} (${GEMINI_IMAGE_MODEL_PRESETS[imageModel]})`
+  );
 
   // Dry run - just show what would be done
   if (dryRun) {
@@ -345,7 +326,8 @@ export async function handleStylizeAppIcon(
     baseIconPath,
     outputPath,
     stylePrompt,
-    preserveShape
+    preserveShape,
+    imageModel
   );
 
   if (!stylizeResult.success) {

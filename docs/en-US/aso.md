@@ -81,7 +81,8 @@ Manages keyword research data for ASO optimization.
 
 ### localize-screenshots
 
-Translates app screenshots to multiple languages using Gemini API (gemini-3-pro-image-preview).
+Translates app screenshots to multiple languages using Gemini API.
+Default model: `gemini-3.1-flash-image-preview` (optionally `gemini-3-pro-image-preview`).
 
 **Requirements:**
 - Gemini API key must be configured (see [Configuration](#gemini-api-configuration))
@@ -98,6 +99,7 @@ Translates app screenshots to multiple languages using Gemini API (gemini-3-pro-
   - Object for per-device: `{ phone: [1, 2], tablet: [1, 3, 5] }`
   - If not provided, all screenshots will be processed
 - `preserveWords` (optional): Words to keep untranslated (e.g., `["Pabal", "Pro", "AI"]`)
+- `imageModel` (optional): `"flash"` (default) or `"pro"`
 
 **Output:**
 - Translated screenshots saved to `screenshots/{targetLocale}/phone/` and `tablet/`

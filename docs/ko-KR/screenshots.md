@@ -53,6 +53,11 @@ Gemini API를 사용하여 앱 스크린샷의 텍스트를 여러 언어로 번
 - 소스 스크린샷: `public/products/{slug}/screenshots/{locale}/phone/` 및 `/tablet/`
 - 로케일 파일: `public/products/{slug}/locales/`
 
+### 모델 선택
+
+- `imageModel: "flash"` (기본값): `gemini-3.1-flash-image-preview` 사용 (속도/비용 효율)
+- `imageModel: "pro"`: `gemini-3-pro-image-preview` 사용 (지시 충실도 우선)
+
 ### 입력 파라미터
 
 | 파라미터          | 타입                    | 필수   | 기본값              | 설명                                      |
@@ -64,6 +69,7 @@ Gemini API를 사용하여 앱 스크린샷의 텍스트를 여러 언어로 번
 | skipExisting      | boolean                 | 아니오 | true                | raw 파일이 있으면 건너뛰기                |
 | screenshotNumbers | number[]                | 아니오 | 전체                | 처리할 특정 스크린샷                      |
 | preserveWords     | string[]                | 아니오 | -                   | 번역하지 않을 단어 (브랜드명)             |
+| imageModel        | ("flash" \| "pro")      | 아니오 | "flash"             | Gemini 이미지 모델 선택                    |
 
 ### 사용 예시
 
@@ -72,7 +78,8 @@ Gemini API를 사용하여 앱 스크린샷의 텍스트를 여러 언어로 번
   "appName": "my-app",
   "targetLocales": ["ko-KR", "ja-JP"],
   "deviceTypes": ["phone"],
-  "preserveWords": ["MyApp", "Pro"]
+  "preserveWords": ["MyApp", "Pro"],
+  "imageModel": "pro"
 }
 ```
 

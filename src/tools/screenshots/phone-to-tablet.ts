@@ -15,7 +15,6 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
-import { GoogleGenAI } from "@google/genai";
 import { findRegisteredApp } from "../../utils/registered-apps.util.js";
 import {
   loadProductLocales,
@@ -26,7 +25,14 @@ import {
   getScreenshotsDir,
   type ScreenshotInfo,
 } from "./utils/scan-screenshots.util.js";
-import { getGeminiApiKey } from "../../utils/config.util.js";
+import {
+  GEMINI_IMAGE_MODEL_PRESETS,
+  GEMINI_IMAGE_MODEL_VALUES,
+  type GeminiImageModelPreference,
+} from "../../utils/gemini-image-model.util.js";
+import { createGeminiClient } from "../../utils/gemini-client.util.js";
+import { readImageAsBase64 } from "../../utils/image-file.util.js";
+import { generateImageWithFallback } from "../../utils/gemini-image-generation.util.js";
 
 const TOOL_NAME = "phone-to-tablet";
 
@@ -71,6 +77,13 @@ export const phoneToTabletInputSchema = z.object({
     .describe(
       'Words to keep exactly as-is in the generated image (e.g., brand names). Example: ["Pabal", "Pro", "AI"]'
     ),
+  imageModel: z
+    .enum(GEMINI_IMAGE_MODEL_VALUES)
+    .optional()
+    .default("flash")
+    .describe(
+      "Gemini image model preference. 'flash' (default) is faster/cheaper, 'pro' prioritizes quality."
+    ),
 });
 
 export type PhoneToTabletInput = z.infer<typeof phoneToTabletInputSchema>;
@@ -104,6 +117,10 @@ Run \`resize-screenshots --deviceTypes tablet\` after this tool to resize images
 - GEMINI_API_KEY or GOOGLE_API_KEY environment variable must be set
 - Phone screenshots must exist in: public/products/{slug}/screenshots/{locale}/phone/
 - Locale files must exist in: public/products/{slug}/locales/
+
+**Model Selection:**
+- \`imageModel: "flash"\` (default) for speed/cost
+- \`imageModel: "pro"\` for higher instruction fidelity
 
 **Example output structure:**
 \`\`\`
@@ -206,35 +223,6 @@ function buildConversionTasks(
   return tasks;
 }
 
-/**
- * Initialize Gemini client
- */
-function getGeminiClient(): GoogleGenAI {
-  const apiKey = getGeminiApiKey();
-  return new GoogleGenAI({ apiKey });
-}
-
-/**
- * Read image file and convert to base64
- */
-function readImageAsBase64(imagePath: string): {
-  data: string;
-  mimeType: string;
-} {
-  const buffer = fs.readFileSync(imagePath);
-  const base64 = buffer.toString("base64");
-
-  const ext = path.extname(imagePath).toLowerCase();
-  let mimeType = "image/png";
-  if (ext === ".jpg" || ext === ".jpeg") {
-    mimeType = "image/jpeg";
-  } else if (ext === ".webp") {
-    mimeType = "image/webp";
-  }
-
-  return { data: base64, mimeType };
-}
-
 interface ConversionProgress {
   current: number;
   total: number;
@@ -250,22 +238,22 @@ interface ConversionProgress {
 async function convertPhoneToTablet(
   phonePath: string,
   tabletRawPath: string,
-  preserveWords?: string[]
+  preserveWords?: string[],
+  imageModel: GeminiImageModelPreference = "flash"
 ): Promise<{ success: boolean; error?: string }> {
-  try {
-    const client = getGeminiClient();
+  const client = createGeminiClient();
 
-    // Read the source image
-    const { data: imageData, mimeType } = readImageAsBase64(phonePath);
+  // Read the source image
+  const { data: imageData, mimeType } = readImageAsBase64(phonePath);
 
-    // Build preserve words instruction if provided
-    const preserveInstruction =
-      preserveWords && preserveWords.length > 0
-        ? `\n- Do NOT change these words, keep them exactly as-is: ${preserveWords.join(", ")}`
-        : "";
+  // Build preserve words instruction if provided
+  const preserveInstruction =
+    preserveWords && preserveWords.length > 0
+      ? `\n- Do NOT change these words, keep them exactly as-is: ${preserveWords.join(", ")}`
+      : "";
 
-    // Create the conversion prompt
-    const prompt = `This is a phone app screenshot. Please recreate this screenshot as a TABLET version.
+  // Create the conversion prompt
+  const prompt = `This is a phone app screenshot. Please recreate this screenshot as a TABLET version.
 
 IMPORTANT INSTRUCTIONS:
 - Convert this phone UI layout to a tablet-friendly WIDER layout
@@ -280,77 +268,34 @@ IMPORTANT INSTRUCTIONS:
 
 Generate a new tablet screenshot that represents the same app screen but optimized for tablet display.`;
 
-    // Create chat session for image editing
-    const chat = client.chats.create({
-      model: "gemini-3-pro-image-preview",
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
+  try {
+    const generated = await generateImageWithFallback({
+      client,
+      prompt,
+      image: {
+        mimeType,
+        data: imageData,
       },
+      aspectRatio: TABLET_ASPECT_RATIO,
+      imageModel,
     });
 
-    // Send message with image
-    const response = await chat.sendMessage({
-      message: [
-        { text: prompt },
-        {
-          inlineData: {
-            mimeType,
-            data: imageData,
-          },
-        },
-      ],
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: {
-          aspectRatio: TABLET_ASPECT_RATIO,
-        },
-      },
-    });
+    const imageBuffer = Buffer.from(generated.imageBase64, "base64");
 
-    // Extract generated image from response
-    const candidates = response.candidates;
-    if (!candidates || candidates.length === 0) {
-      return {
-        success: false,
-        error: "No response from Gemini API",
-      };
+    // Ensure output directory exists
+    const outputDir = path.dirname(tabletRawPath);
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const parts = candidates[0].content?.parts;
-    if (!parts) {
-      return {
-        success: false,
-        error: "No content parts in response",
-      };
-    }
+    // Convert to PNG and save
+    await sharp(imageBuffer).png().toFile(tabletRawPath);
 
-    // Find image data in response
-    for (const part of parts) {
-      if (part.inlineData?.data) {
-        const imageBuffer = Buffer.from(part.inlineData.data, "base64");
-
-        // Ensure output directory exists
-        const outputDir = path.dirname(tabletRawPath);
-        if (!fs.existsSync(outputDir)) {
-          fs.mkdirSync(outputDir, { recursive: true });
-        }
-
-        // Convert to PNG and save
-        await sharp(imageBuffer).png().toFile(tabletRawPath);
-
-        return { success: true };
-      }
-    }
-
-    return {
-      success: false,
-      error: "No image data in Gemini response",
-    };
+    return { success: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      error: message,
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }
@@ -361,7 +306,8 @@ Generate a new tablet screenshot that represents the same app screen but optimiz
 async function convertWithProgress(
   tasks: ConversionTask[],
   onProgress?: (progress: ConversionProgress) => void,
-  preserveWords?: string[]
+  preserveWords?: string[],
+  imageModel: GeminiImageModelPreference = "flash"
 ): Promise<{
   successful: number;
   failed: number;
@@ -389,7 +335,8 @@ async function convertWithProgress(
     const result = await convertPhoneToTablet(
       task.phonePath,
       task.tabletRawPath,
-      preserveWords
+      preserveWords,
+      imageModel
     );
 
     if (result.success) {
@@ -424,6 +371,7 @@ export async function handlePhoneToTablet(
     dryRun = false,
     skipExisting = true,
     preserveWords,
+    imageModel = "flash",
   } = input;
 
   const results: string[] = [];
@@ -483,6 +431,9 @@ export async function handlePhoneToTablet(
   }
 
   results.push(`🎯 Locales to process: ${localesToProcess.join(", ")}`);
+  results.push(
+    `🧠 Image model: ${imageModel} (${GEMINI_IMAGE_MODEL_PRESETS[imageModel]})`
+  );
 
   // Step 4: Build conversion tasks for all locales
   const allTasks: ConversionTask[] = [];
@@ -592,7 +543,8 @@ export async function handlePhoneToTablet(
         );
       }
     },
-    preserveWords
+    preserveWords,
+    imageModel
   );
 
   results.push(`\n📊 Conversion Results:`);

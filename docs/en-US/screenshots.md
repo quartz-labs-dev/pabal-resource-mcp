@@ -53,6 +53,11 @@ Translates text in app screenshots to multiple languages using Gemini API.
 - Source screenshots in: `public/products/{slug}/screenshots/{locale}/phone/` and `/tablet/`
 - Locale files in: `public/products/{slug}/locales/`
 
+### Model Selection
+
+- `imageModel: "flash"` (default) uses `gemini-3.1-flash-image-preview` for speed/cost efficiency
+- `imageModel: "pro"` uses `gemini-3-pro-image-preview` for higher instruction fidelity
+
 ### Input Parameters
 
 | Parameter         | Type                    | Required | Default             | Description                              |
@@ -64,6 +69,7 @@ Translates text in app screenshots to multiple languages using Gemini API.
 | skipExisting      | boolean                 | No       | true                | Skip if raw file already exists          |
 | screenshotNumbers | number[]                | No       | All                 | Specific screenshots to process          |
 | preserveWords     | string[]                | No       | -                   | Words to keep untranslated (brand names) |
+| imageModel        | ("flash" \| "pro")      | No       | "flash"             | Gemini image model preference            |
 
 ### Example Usage
 
@@ -72,7 +78,8 @@ Translates text in app screenshots to multiple languages using Gemini API.
   "appName": "my-app",
   "targetLocales": ["ko-KR", "ja-JP"],
   "deviceTypes": ["phone"],
-  "preserveWords": ["MyApp", "Pro"]
+  "preserveWords": ["MyApp", "Pro"],
+  "imageModel": "pro"
 }
 ```
 

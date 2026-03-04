@@ -2,14 +2,19 @@
  * Gemini API Image Translator Utility
  *
  * Translates text within images using Google Gemini API
- * Model: gemini-3-pro-image-preview
+ * Default model: gemini-3.1-flash-image-preview (fallback: gemini-3-pro-image-preview)
  */
 
-import { GoogleGenAI } from "@google/genai";
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
-import { getGeminiApiKey } from "../../../utils/config.util.js";
+import {
+  GEMINI_IMAGE_MODEL_PRESETS,
+  type GeminiImageModelPreference,
+} from "../../../utils/gemini-image-model.util.js";
+import { createGeminiClient } from "../../../utils/gemini-client.util.js";
+import { readImageAsBase64 } from "../../../utils/image-file.util.js";
+import { generateImageWithFallback } from "../../../utils/gemini-image-generation.util.js";
 import { type GeminiTargetLocale } from "./locale-mapping.constants.js";
 
 // App Store screenshot dimensions by device type
@@ -97,35 +102,6 @@ export interface TranslationProgress {
 }
 
 /**
- * Initialize Gemini client
- */
-function getGeminiClient(): GoogleGenAI {
-  const apiKey = getGeminiApiKey();
-  return new GoogleGenAI({ apiKey });
-}
-
-/**
- * Read image file and convert to base64
- */
-function readImageAsBase64(imagePath: string): {
-  data: string;
-  mimeType: string;
-} {
-  const buffer = fs.readFileSync(imagePath);
-  const base64 = buffer.toString("base64");
-
-  const ext = path.extname(imagePath).toLowerCase();
-  let mimeType = "image/png";
-  if (ext === ".jpg" || ext === ".jpeg") {
-    mimeType = "image/jpeg";
-  } else if (ext === ".webp") {
-    mimeType = "image/webp";
-  }
-
-  return { data: base64, mimeType };
-}
-
-/**
  * Get Gemini aspect ratio for device type
  */
 function getAspectRatioForDevice(deviceType: DeviceType): string {
@@ -142,27 +118,27 @@ export async function translateImage(
   targetLocale: string,
   outputPaths: string[], // Multiple paths for grouped locales
   deviceType: DeviceType,
-  preserveWords?: string[]
+  preserveWords?: string[],
+  imageModel: GeminiImageModelPreference = "flash"
 ): Promise<ImageTranslationResult> {
-  try {
-    const client = getGeminiClient();
-    const sourceLanguage = getLanguageName(sourceLocale);
-    const targetLanguage = getLanguageName(targetLocale);
+  const client = createGeminiClient();
+  const sourceLanguage = getLanguageName(sourceLocale);
+  const targetLanguage = getLanguageName(targetLocale);
 
-    // Get aspect ratio for device type
-    const aspectRatio = getAspectRatioForDevice(deviceType);
+  // Get aspect ratio for device type
+  const aspectRatio = getAspectRatioForDevice(deviceType);
 
-    // Read the source image
-    const { data: imageData, mimeType } = readImageAsBase64(sourcePath);
+  // Read the source image
+  const { data: imageData, mimeType } = readImageAsBase64(sourcePath);
 
-    // Build preserve words instruction if provided
-    const preserveInstruction =
-      preserveWords && preserveWords.length > 0
-        ? `\n- Do NOT translate these words, keep them exactly as-is: ${preserveWords.join(", ")}`
-        : "";
+  // Build preserve words instruction if provided
+  const preserveInstruction =
+    preserveWords && preserveWords.length > 0
+      ? `\n- Do NOT translate these words, keep them exactly as-is: ${preserveWords.join(", ")}`
+      : "";
 
-    // Create the translation prompt
-    const prompt = `This is an app screenshot with text in ${sourceLanguage}.
+  // Create the translation prompt
+  const prompt = `This is an app screenshot with text in ${sourceLanguage}.
 Please translate ONLY the text/words in this image to ${targetLanguage}.
 
 IMPORTANT INSTRUCTIONS:
@@ -173,82 +149,39 @@ IMPORTANT INSTRUCTIONS:
 - The output should look identical except the text language is ${targetLanguage}
 - Preserve all icons, images, and graphical elements exactly as they are${preserveInstruction}`;
 
-    // Create chat session for image editing
-    const chat = client.chats.create({
-      model: "gemini-3-pro-image-preview",
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
+  try {
+    const generated = await generateImageWithFallback({
+      client,
+      prompt,
+      image: {
+        mimeType,
+        data: imageData,
       },
+      aspectRatio,
+      imageModel,
     });
 
-    // Send message with image
-    const response = await chat.sendMessage({
-      message: [
-        { text: prompt },
-        {
-          inlineData: {
-            mimeType,
-            data: imageData,
-          },
-        },
-      ],
-      config: {
-        responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: {
-          aspectRatio,
-        },
-      },
-    });
+    const imageBuffer = Buffer.from(generated.imageBase64, "base64");
 
-    // Extract generated image from response
-    const candidates = response.candidates;
-    if (!candidates || candidates.length === 0) {
-      return {
-        success: false,
-        error: "No response from Gemini API",
-      };
-    }
-
-    const parts = candidates[0].content?.parts;
-    if (!parts) {
-      return {
-        success: false,
-        error: "No content parts in response",
-      };
-    }
-
-    // Find image data in response
-    for (const part of parts) {
-      if (part.inlineData?.data) {
-        const imageBuffer = Buffer.from(part.inlineData.data, "base64");
-
-        // Save to all output paths (representative + grouped locales)
-        for (const outputPath of outputPaths) {
-          const outputDir = path.dirname(outputPath);
-          if (!fs.existsSync(outputDir)) {
-            fs.mkdirSync(outputDir, { recursive: true });
-          }
-
-          // Convert to PNG and save
-          await sharp(imageBuffer).png().toFile(outputPath);
-        }
-
-        return {
-          success: true,
-          outputPath: outputPaths[0], // Return primary path
-        };
+    // Save to all output paths (representative + grouped locales)
+    for (const outputPath of outputPaths) {
+      const outputDir = path.dirname(outputPath);
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
       }
+
+      // Convert to PNG and save
+      await sharp(imageBuffer).png().toFile(outputPath);
     }
 
     return {
-      success: false,
-      error: "No image data in Gemini response",
+      success: true,
+      outputPath: outputPaths[0], // Return primary path
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     return {
       success: false,
-      error: message,
+      error: error instanceof Error ? error.message : String(error),
     };
   }
 }
@@ -267,7 +200,8 @@ export async function translateImagesWithProgress(
     filename: string;
   }>,
   onProgress?: (progress: TranslationProgress) => void,
-  preserveWords?: string[]
+  preserveWords?: string[],
+  imageModel: GeminiImageModelPreference = "flash"
 ): Promise<{
   successful: number;
   failed: number;
@@ -300,7 +234,8 @@ export async function translateImagesWithProgress(
       translation.targetLocale,
       translation.outputPaths,
       translation.deviceType as DeviceType,
-      preserveWords
+      preserveWords,
+      imageModel
     );
 
     if (result.success) {
@@ -323,4 +258,10 @@ export async function translateImagesWithProgress(
   }
 
   return { successful, failed, errors };
+}
+
+export function getImageModelLabel(
+  imageModel: GeminiImageModelPreference
+): string {
+  return `${imageModel} (${GEMINI_IMAGE_MODEL_PRESETS[imageModel]})`;
 }
