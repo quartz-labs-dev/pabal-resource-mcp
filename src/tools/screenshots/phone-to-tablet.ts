@@ -3,8 +3,8 @@
  *
  * This tool:
  * 1. Reads phone screenshot images from the primary locale
- * 2. Uses Gemini API to regenerate the UI as tablet-sized screenshots
- *    - Adjusts the internal device frame and UI layout for wider screens
+ * 2. Uses Gemini API to adapt screenshots to tablet canvas size
+ *    - Preserves original UI/content and avoids redesigning layout
  * 3. Saves generated tablet images to raw/ folder
  *
  * Use resize-screenshots --deviceTypes tablet after this tool to resize images to final dimensions.
@@ -101,8 +101,8 @@ export const phoneToTabletTool = {
 
 **PURPOSE:** Generate tablet-sized screenshots from existing phone screenshots by:
 1. Reading phone screenshots from the source locale
-2. Using Gemini to regenerate the UI with a tablet-friendly wider layout
-3. Adjusting internal device frame and UI components for larger screen
+2. Using Gemini to keep the same UI while adapting to a tablet canvas
+3. Preserving original content/layout without creating new UI
 
 **OUTPUT:** Saves generated tablet images to raw/ folder: \`{locale}/tablet/raw/{filename}\`
 
@@ -253,20 +253,20 @@ async function convertPhoneToTablet(
       : "";
 
   // Create the conversion prompt
-  const prompt = `This is a phone app screenshot. Please recreate this screenshot as a TABLET version.
+  const prompt = `Convert this PHONE app screenshot into a TABLET screenshot.
 
 IMPORTANT INSTRUCTIONS:
-- Convert this phone UI layout to a tablet-friendly WIDER layout
-- The tablet screen has a 3:4 aspect ratio (wider than phone's 9:16)
-- Expand the UI horizontally to take advantage of the wider screen
-- If there's a device frame mockup, change it to a tablet device frame
-- Maintain the same visual style, colors, and design language
-- Keep all the same content and text, just adjust the layout
-- Use tablet-appropriate spacing and element sizes
-- If the phone shows a single column, consider using wider cards or side-by-side layouts
-- Keep the same app functionality visible, just optimized for tablet${preserveInstruction}
+- Preserve the original UI exactly: same components, text, icons, colors, and visual hierarchy
+- Do NOT redesign, recompose, or invent any new UI
+- Do NOT add/remove/reorder elements
+- Do NOT create side-by-side layouts, new panels, or alternative arrangements
+- Keep the same screen content and structure from the phone screenshot
+- Only adapt to tablet aspect ratio (3:4) by extending canvas width as needed
+- Keep the original content centered and unchanged as much as possible
+- Use matching background fill/empty space for extra horizontal area
+- If a device frame exists, keep the same frame style and avoid changing its design${preserveInstruction}
 
-Generate a new tablet screenshot that represents the same app screen but optimized for tablet display.`;
+Output one tablet screenshot that looks like the original phone screenshot placed on a wider tablet canvas.`;
 
   try {
     const generated = await generateImageWithFallback({
