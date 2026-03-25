@@ -171,7 +171,7 @@ function getSupportedLocales(slug: string): {
 interface ResizeTask {
   rawPath: string;
   outputPath: string;
-  sourceReferencePath: string;
+  sourceReferencePath?: string;
   locale: string;
   deviceType: "phone" | "tablet";
   filename: string;
@@ -194,6 +194,10 @@ function buildResizeTasks(
     const key = `${screenshot.type}/${screenshot.filename}`;
     sourceRefMap.set(key, screenshot.fullPath);
   }
+  const sourceHasByDevice = {
+    phone: sourceScreenshots.some((s) => s.type === "phone"),
+    tablet: sourceScreenshots.some((s) => s.type === "tablet"),
+  };
 
   for (const locale of rawLocales) {
     const rawScreenshots = scanRawScreenshots(slug, locale);
@@ -229,7 +233,10 @@ function buildResizeTasks(
       const key = `${screenshot.type}/${screenshot.filename}`;
       const sourceReferencePath = sourceRefMap.get(key);
 
-      if (!sourceReferencePath) {
+      // If source locale has this device type, keep old behavior: only process
+      // files that have a matching source filename. If source has none for this
+      // device (e.g. tablet first-generation flow), allow raw files through.
+      if (!sourceReferencePath && sourceHasByDevice[screenshot.type]) {
         continue;
       }
 
