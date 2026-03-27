@@ -23,7 +23,12 @@ export {
   GOOGLE_PLAY_TO_UNIFIED,
   type UnifiedLocale,
 } from "./constants/unified-locales.js";
-export { DEFAULT_APP_SLUG } from "./constants/blog.constants.js";
+export {
+  DEFAULT_APP_SLUG,
+  DEVELOPER_JOURNAL_APP_SLUG,
+  DEVELOPER_TECH_APP_SLUG,
+  isDeveloperBlogAppSlug,
+} from "./constants/blog.constants.js";
 
 // Utils (browser-safe)
 export * from "./utils/locale-converter.js";

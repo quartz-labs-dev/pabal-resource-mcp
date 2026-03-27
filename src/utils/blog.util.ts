@@ -4,6 +4,7 @@ import type {
   BlogMetaOutput,
   CreateBlogHtmlInput,
 } from "../types/tools/create-blog.types.js";
+import { isDeveloperBlogAppSlug } from "../constants/blog.constants.js";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -57,6 +58,10 @@ export function resolveCoverImagePath(
   coverImage?: string
 ): string {
   if (!coverImage || !coverImage.trim()) {
+    if (isDeveloperBlogAppSlug(appSlug)) {
+      return "/og-image.png";
+    }
+
     return `/products/${appSlug}/og-image.png`;
   }
 
@@ -212,7 +217,7 @@ export function parseBlogHtml(htmlContent: string): {
     const body = htmlContent.replace(metaBlockRegex, "").trim();
 
     return { meta, body };
-  } catch (error) {
+  } catch {
     // If parsing fails, return the whole content as body
     return { meta: null, body: htmlContent.trim() };
   }
@@ -266,7 +271,7 @@ export function findExistingBlogPosts({
           publishedAt: meta.publishedAt,
         });
       }
-    } catch (error) {
+    } catch {
       // Skip files that can't be read or parsed
       continue;
     }

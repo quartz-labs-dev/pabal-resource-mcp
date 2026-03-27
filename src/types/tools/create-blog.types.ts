@@ -22,7 +22,7 @@ export interface BlogMetaOutput {
 export interface CreateBlogHtmlInput {
   /**
    * Product/app slug used for paths and CTAs.
-   * Defaults to "developer" when not provided.
+   * Defaults to "developer-journal" when not provided.
    */
   appSlug: string;
   /**

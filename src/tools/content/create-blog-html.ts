@@ -11,7 +11,12 @@ import {
   slugifyTitle,
 } from "../../utils/blog.util.js";
 import { getPublicDir } from "../../utils/config.util.js";
-import { DEFAULT_APP_SLUG } from "../../constants/blog.constants.js";
+import {
+  DEFAULT_APP_SLUG,
+  DEVELOPER_JOURNAL_APP_SLUG,
+  DEVELOPER_TECH_APP_SLUG,
+  isDeveloperBlogAppSlug,
+} from "../../constants/blog.constants.js";
 import type {
   BlogMetaOutput,
   CreateBlogHtmlResult,
@@ -30,6 +35,7 @@ const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
  * Generates static HTML blog posts under public/blogs/<appSlug>/<slug>/<locale>.html.
  * - BLOG_META block is embedded at the top of each file
  * - coverImage defaults to /products/<appSlug>/og-image.png unless provided
+ *   (developer slugs default to /og-image.png)
  * - Relative image example (./images/hero.png) can be injected into the body
  * - Overwrite is opt-in to avoid clobbering existing posts
  */
@@ -94,7 +100,7 @@ export const createBlogHtmlInputSchema = z
       .trim()
       .optional()
       .describe(
-        "Cover image path. Relative paths rewrite to /blogs/<app>/<slug>/..., default is /products/<appSlug>/og-image.png."
+        "Cover image path. Relative paths rewrite to /blogs/<app>/<slug>/..., default is /products/<appSlug>/og-image.png (developer slugs default to /og-image.png)."
       ),
     publishedAt: z
       .string()
@@ -142,16 +148,17 @@ IMPORTANT REQUIREMENTS:
 1. The 'locale' parameter is REQUIRED. If the user does not provide a locale, you MUST ask them to specify which language/locale they want to write the blog in (e.g., 'en-US', 'ko-KR', 'ja-JP', etc.).
 2. The 'content' parameter is REQUIRED. You (the LLM) must generate the HTML content based on the 'topic' and 'locale' provided by the user. The content should be written in the language corresponding to the locale AND match the writing style of existing blog posts for that locale.
 3. The 'description' parameter is REQUIRED. You (the LLM) must generate this based on the topic, locale, AND the writing style of existing blog posts.
-4. The 'appSlug' parameter: 
-   - If the user explicitly requests "developer category", "developer blog", "personal category", "my category", or similar, you MUST set appSlug to "developer".
+4. The 'appSlug' parameter:
+   - If the user requests personal/daily/journal developer content, set appSlug to "${DEVELOPER_JOURNAL_APP_SLUG}".
+   - If the user requests technical/engineering/devlog content, set appSlug to "${DEVELOPER_TECH_APP_SLUG}".
    - If the user mentions a specific app/product, use that app's slug.
-   - If not specified, defaults to "developer".
+   - If not specified, defaults to "${DEFAULT_APP_SLUG}".
 
 Slug rules:
 - slug = slugify(English title, kebab-case ASCII)
 - path: public/blogs/<appSlug>/<slug>/<locale>.html
-- appSlug: Use "developer" when user requests developer/personal category. Defaults to "developer" if not specified.
-- coverImage default: /products/<appSlug>/og-image.png (relative paths are rewritten under /blogs/<app>/<slug>/)
+- appSlug: Use "${DEVELOPER_JOURNAL_APP_SLUG}" for personal/journal posts, "${DEVELOPER_TECH_APP_SLUG}" for technical posts. Defaults to "${DEFAULT_APP_SLUG}" if not specified.
+- coverImage default: /products/<appSlug>/og-image.png (relative paths are rewritten under /blogs/<app>/<slug>/, developer slugs default to /og-image.png)
 - overwrite defaults to false (throws when file exists)
 
 HTML Structure (follows public/en-US.html pattern):
@@ -225,6 +232,8 @@ export async function handleCreateBlogHtml(
     coverImage:
       coverImage && coverImage.trim().length > 0
         ? coverImage.trim()
+        : isDeveloperBlogAppSlug(appSlug)
+        ? "/og-image.png"
         : `/products/${appSlug}/og-image.png`,
     metaByLocale: {},
   };
