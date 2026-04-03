@@ -93,6 +93,7 @@ export interface ProductConfig {
   packageName?: string;
   bundleId?: string;
   isHiddenAtHomepage?: boolean;
+  isHiddenOnHome?: boolean;
 
   // Styling
   layoutColors?: LayoutColors;
