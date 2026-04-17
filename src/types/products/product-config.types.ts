@@ -107,6 +107,10 @@ export interface ProductConfig {
   // App Icon settings
   appIcon?: AppIconConfig;
 
+  // Product custom detail pages under /[locale]/[product]/[...customPath]
+  // e.g., ["tournaments", "gis", "location-probability"]
+  extraPaths?: string[];
+
   // Legacy/optional fields (used in code but may not exist in config.json)
   name?: string;
   tagline?: string;
