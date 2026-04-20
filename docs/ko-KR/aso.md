@@ -2,6 +2,10 @@
 
 앱 스토어 최적화(ASO) 데이터 관리 툴.
 
+## AI 도구 추천
+
+- **ASO 스킬 자동화**: [aso-skills](https://github.com/Eronred/aso-skills)
+
 ## 툴 목록
 
 ### aso-to-public (pull)

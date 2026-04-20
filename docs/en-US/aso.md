@@ -2,6 +2,10 @@
 
 Tools for App Store Optimization data management.
 
+## AI Tool Recommendation
+
+- **ASO skill automation**: [aso-skills](https://github.com/Eronred/aso-skills)
+
 ## Tools
 
 ### aso-to-public (pull)

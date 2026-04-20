@@ -2,6 +2,10 @@
 
 App Store 로컬라이제이션을 위한 앱 스크린샷 번역 및 리사이징 도구입니다.
 
+## AI 도구 추천
+
+- **스크린샷 자동 생성**: [app-store-screenshots](https://github.com/ParthJadhav/app-store-screenshots)
+
 ## 개요
 
 스크린샷 워크플로우는 두 개의 별도 도구로 구성됩니다:

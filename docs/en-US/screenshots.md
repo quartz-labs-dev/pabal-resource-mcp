@@ -2,6 +2,10 @@
 
 Tools for translating and resizing app screenshots for App Store localization.
 
+## AI Tool Recommendation
+
+- **Screenshot generation automation**: [app-store-screenshots](https://github.com/ParthJadhav/app-store-screenshots)
+
 ## Overview
 
 The screenshot workflow consists of two separate tools:
