@@ -188,20 +188,34 @@ export function loadAsoFromConfig(slug: string): AsoData {
         }
 
         // Check if screenshots exist for this locale - verify each type separately
-        const screenshotsDir = path.join(productsDir, slug, "screenshots", locale);
+        const screenshotsDir = path.join(
+          productsDir,
+          slug,
+          "screenshots",
+          locale
+        );
         const phoneDir = path.join(screenshotsDir, "phone");
         const tabletDir = path.join(screenshotsDir, "tablet");
+        const featureGraphicPath = path.join(
+          screenshotsDir,
+          "feature-graphic.png"
+        );
         const hasPhoneScreenshots = fs.existsSync(phoneDir);
         const hasTabletScreenshots = fs.existsSync(tabletDir);
+        const hasFeatureGraphic = fs.existsSync(featureGraphicPath);
 
         // Add locale to screenshot paths only if the specific type directory exists
         const localeScreenshots: typeof screenshots = {
-          phone: hasPhoneScreenshots ? screenshots.phone?.map((p) =>
-            p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
-          ) : undefined,
-          tablet: hasTabletScreenshots ? screenshots.tablet?.map((p) =>
-            p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
-          ) : undefined,
+          phone: hasPhoneScreenshots
+            ? screenshots.phone?.map((p) =>
+                p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
+              )
+            : undefined,
+          tablet: hasTabletScreenshots
+            ? screenshots.tablet?.map((p) =>
+                p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
+              )
+            : undefined,
         };
 
         googlePlayLocales[locale] = {
@@ -214,6 +228,9 @@ export function loadAsoFromConfig(slug: string): AsoData {
             phone: localeScreenshots.phone || [],
             tablet: localeScreenshots.tablet,
           },
+          featureGraphic: hasFeatureGraphic
+            ? `/products/${slug}/screenshots/${locale}/feature-graphic.png`
+            : metadata.featureGraphic,
         };
       }
 
@@ -225,8 +242,8 @@ export function loadAsoFromConfig(slug: string): AsoData {
         const resolvedDefault = hasConfigDefault
           ? defaultLocale
           : googlePlayLocales[DEFAULT_LOCALE]
-          ? DEFAULT_LOCALE
-          : googleLocaleKeys[0];
+            ? DEFAULT_LOCALE
+            : googleLocaleKeys[0];
         asoData.googlePlay = {
           locales: googlePlayLocales,
           defaultLocale: resolvedDefault,
@@ -269,7 +286,12 @@ export function loadAsoFromConfig(slug: string): AsoData {
         }
 
         // Check if screenshots exist for this locale - verify each type separately
-        const screenshotsDir = path.join(productsDir, slug, "screenshots", locale);
+        const screenshotsDir = path.join(
+          productsDir,
+          slug,
+          "screenshots",
+          locale
+        );
         const phoneDir = path.join(screenshotsDir, "phone");
         const tabletDir = path.join(screenshotsDir, "tablet");
         const hasPhoneScreenshots = fs.existsSync(phoneDir);
@@ -277,12 +299,16 @@ export function loadAsoFromConfig(slug: string): AsoData {
 
         // Add locale to screenshot paths only if the specific type directory exists
         const localeScreenshots: typeof screenshots = {
-          phone: hasPhoneScreenshots ? screenshots.phone?.map((p) =>
-            p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
-          ) : undefined,
-          tablet: hasTabletScreenshots ? screenshots.tablet?.map((p) =>
-            p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
-          ) : undefined,
+          phone: hasPhoneScreenshots
+            ? screenshots.phone?.map((p) =>
+                p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
+              )
+            : undefined,
+          tablet: hasTabletScreenshots
+            ? screenshots.tablet?.map((p) =>
+                p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
+              )
+            : undefined,
         };
 
         appStoreLocales[locale] = {
@@ -312,8 +338,8 @@ export function loadAsoFromConfig(slug: string): AsoData {
         const resolvedDefault = hasConfigDefault
           ? defaultLocale
           : appStoreLocales[DEFAULT_LOCALE]
-          ? DEFAULT_LOCALE
-          : appStoreLocaleKeys[0];
+            ? DEFAULT_LOCALE
+            : appStoreLocaleKeys[0];
 
         asoData.appStore = {
           locales: appStoreLocales,

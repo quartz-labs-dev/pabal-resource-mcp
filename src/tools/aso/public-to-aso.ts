@@ -112,7 +112,11 @@ async function downloadScreenshotArray(
     const outputPath = path.join(asoDir, filename);
     const relativePath = `${relativeDir}/${filename}`;
 
-    const result = await downloadAndVerifyScreenshot(url, outputPath, relativePath);
+    const result = await downloadAndVerifyScreenshot(
+      url,
+      outputPath,
+      relativePath
+    );
     if (result) {
       relativePaths.push(result);
     }
@@ -176,8 +180,8 @@ async function downloadScreenshotsToAsoDir(
         "tablet7"
       );
 
-      const tablet10Paths = await downloadScreenshotArray(
-        localeData.screenshots?.tablet10,
+      const tabletPaths = await downloadScreenshotArray(
+        localeData.screenshots?.tablet ?? localeData.screenshots?.tablet10,
         asoDir,
         relativeDir,
         "tablet10"
@@ -200,13 +204,16 @@ async function downloadScreenshotsToAsoDir(
 
       // Update localeData with relative paths (only for files that actually exist)
       const hasDownloadedScreenshots =
-        phonePaths.length > 0 || tablet7Paths.length > 0 || tablet10Paths.length > 0;
+        phonePaths.length > 0 ||
+        tablet7Paths.length > 0 ||
+        tabletPaths.length > 0;
 
       if (hasDownloadedScreenshots || featureGraphicPath) {
         localeData.screenshots = {
           phone: phonePaths,
+          tablet: tabletPaths,
           tablet7: tablet7Paths,
-          tablet10: tablet10Paths,
+          tablet10: tabletPaths,
         };
         if (featureGraphicPath) {
           localeData.featureGraphic = featureGraphicPath;
@@ -259,7 +266,8 @@ async function downloadScreenshotsToAsoDir(
       );
 
       // Update localeData with relative paths (only for files that actually exist)
-      const hasDownloadedScreenshots = iphone65Paths.length > 0 || ipadPro129Paths.length > 0;
+      const hasDownloadedScreenshots =
+        iphone65Paths.length > 0 || ipadPro129Paths.length > 0;
 
       if (hasDownloadedScreenshots) {
         localeData.screenshots = {
@@ -397,8 +405,8 @@ export async function handlePublicToAso(
     );
   }
 
-  // Prepare data for push (convert locale keys, add video/contactWebsite/supportUrl/marketingUrl from config)
-  const storeData = prepareAsoDataForPush(sanitizedData);
+  // Prepare preview data for push (convert locale keys, add video/contactWebsite/supportUrl/marketingUrl from config)
+  const previewStoreData = prepareAsoDataForPush(sanitizedData);
   const validationIssues = validateFieldLimits(sanitizedData);
   const validationMessage = formatValidationIssues(validationIssues);
 
@@ -410,7 +418,7 @@ export async function handlePublicToAso(
         {
           type: "text",
           text: `Preview mode - Data that would be saved to ${pushDataRoot}:\n\n${JSON.stringify(
-            storeData,
+            previewStoreData,
             null,
             2
           )}\n\n${validationMessage}${
@@ -431,11 +439,14 @@ export async function handlePublicToAso(
     );
   }
 
+  // Download/copy screenshots and feature graphics before saving metadata so
+  // aso-data.json points at the copied pushData files.
+  await downloadScreenshotsToAsoDir(slug, sanitizedData);
+
+  const storeData = prepareAsoDataForPush(sanitizedData);
+
   // Save metadata to pushData
   saveRawAsoData(slug, storeData);
-
-  // Download/copy screenshots
-  await downloadScreenshotsToAsoDir(slug, configData);
 
   const localeCounts: { googlePlay?: number; appStore?: number } = {};
 
