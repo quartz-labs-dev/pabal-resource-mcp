@@ -1,6 +1,6 @@
 {
   "name": "pabal-resource-mcp",
-  "version": "1.10.4",
+  "version": "1.10.5",
   "type": "module",
   "description": "MCP server for ASO data management with shared types and utilities",
   "author": "skyu",
@@ -57,6 +57,7 @@
   "scripts": {
     "build": "tsup src/index.ts src/browser.ts src/bin/mcp-server.ts --format esm --dts --external node:fs --external node:path --external node:os",
     "dev": "tsx src/bin/mcp-server.ts",
+    "test": "tsx --test \"tests/**/*.test.ts\"",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },

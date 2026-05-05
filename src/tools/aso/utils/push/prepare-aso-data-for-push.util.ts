@@ -20,7 +20,7 @@ import {
  * Prepare ASO data for pushing to stores
  * - Converts unified locale keys to store-specific locale keys
  * - Preserves all original data including screenshots
- * - Adds video, contactWebsite, supportUrl, marketingUrl to each locale (from config)
+ * - Adds video, contactWebsite, App Store URLs to each locale (from config)
  */
 export function prepareAsoDataForPush(configData: AsoData): Partial<AsoData> {
   const storeData: Partial<AsoData> = {};
@@ -81,12 +81,21 @@ export function prepareAsoDataForPush(configData: AsoData): Partial<AsoData> {
       ? appStoreData.locales
       : { [appStoreData.locale || DEFAULT_LOCALE]: appStoreData };
 
-    // Get app-level URLs from config
+    // Get app-level URLs from config. App Store Connect accepts supportUrl and
+    // marketingUrl on version localizations, while privacyPolicyUrl is app-info
+    // level. We keep the values both at app level and locale level so downstream
+    // push tools can choose the correct API boundary without dropping data.
     const appLevelSupportUrl = isAppStoreMultilingual(appStoreData)
       ? appStoreData.supportUrl
       : undefined;
     const appLevelMarketingUrl = isAppStoreMultilingual(appStoreData)
       ? appStoreData.marketingUrl
+      : undefined;
+    const appLevelPrivacyPolicyUrl = isAppStoreMultilingual(appStoreData)
+      ? appStoreData.privacyPolicyUrl
+      : undefined;
+    const appLevelTermsUrl = isAppStoreMultilingual(appStoreData)
+      ? appStoreData.termsUrl
       : undefined;
 
     // Convert unified locale keys to App Store locale keys
@@ -94,12 +103,15 @@ export function prepareAsoDataForPush(configData: AsoData): Partial<AsoData> {
     for (const [unifiedLocale, localeData] of Object.entries(locales)) {
       const appStoreLocale = unifiedToAppStore(unifiedLocale as UnifiedLocale);
       if (appStoreLocale !== null) {
-        // Preserve all original data + add supportUrl/marketingUrl
+        // Preserve all original data + add app-level URLs as locale fallbacks.
         convertedLocales[appStoreLocale] = {
           ...localeData,
           locale: appStoreLocale,
           supportUrl: localeData.supportUrl || appLevelSupportUrl,
           marketingUrl: localeData.marketingUrl || appLevelMarketingUrl,
+          privacyPolicyUrl:
+            localeData.privacyPolicyUrl || appLevelPrivacyPolicyUrl,
+          termsUrl: localeData.termsUrl || appLevelTermsUrl,
         };
       }
     }
