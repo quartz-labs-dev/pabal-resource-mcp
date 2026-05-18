@@ -4,6 +4,14 @@ ASO (App Store Optimization) is the practice of shaping an app's name, subtitle,
 
 ## Title and Subtitle
 
+ASO metadata should place important search terms in strict priority order:
+
+1. Title
+2. Subtitle
+3. Keywords
+
+Do not repeat the same keyword term across these three fields. If a term is used in the title, do not use it again in the subtitle or `aso.keywords`. If a term is used in the subtitle, do not use it again in `aso.keywords`.
+
 ### App Name
 
 The app name should combine the app brand with the most relevant core keyword.
@@ -11,6 +19,7 @@ The app name should combine the app brand with the most relevant core keyword.
 - Recommended format: `App Name: Primary Keyword`
 - Example: `Headspace: Mindful Meditation`
 - Keep the app name stable and place the most important search keyword after the colon.
+- Use the single most important keyword opportunity here before using any other metadata field.
 - Stay within the title length limit in `docs/aso/ASO_FIELD_LIMITS.md`.
 
 ### Subtitle
@@ -19,6 +28,7 @@ The subtitle should describe the app's main value using keywords that are not al
 
 - Example: `Relaxations for Sleep & Stress`
 - Do not repeat keywords that already appear in the title.
+- Use the next most important keyword opportunities after the title.
 - Stay within the subtitle length limit.
 
 ## Keywords
@@ -28,6 +38,7 @@ The subtitle should describe the app's main value using keywords that are not al
 - Separate even single-word keywords with commas.
 - Use commas only, with no spaces.
 - Do not include keywords that duplicate the title or subtitle.
+- Use only remaining keyword opportunities that were not already used in the title or subtitle.
 - Prefer singular forms. Example: use `habit` instead of `habits`.
 - Misspellings can be valid keywords if users actually search for them.
 - Put the most important keywords first.
@@ -60,5 +71,17 @@ Before choosing a keyword, check the following:
 1. Put the most relevant core keyword in the app name.
 2. Put important keywords not used in the title into the subtitle.
 3. Put the remaining keywords in `aso.keywords`, ordered by importance, and expand the list until it is as close to 100 characters as possible without lowering relevance.
-4. Remove duplicates, spaces, unnecessary plural forms, and title/subtitle repetition from the keyword list.
+4. Remove duplicates, spaces, unnecessary plural forms, and any overlap between title, subtitle, and keywords.
 5. Validate length limits against `docs/aso/ASO_FIELD_LIMITS.md`.
+
+## Keyword Source Priority
+
+When improving public product metadata, apply keyword sources in this order:
+
+1. Product-level manual CSV files at `.aso/keywordResearch/products/[slug]/*.csv`.
+2. Locale-specific saved keyword research at `.aso/keywordResearch/products/[slug]/locales/[locale]/`.
+3. Translated fallback keyword research, only when locale-specific research is missing.
+
+Manual CSV keywords are human-curated priority input. First use rows where the CSV `Store Domain` matches the target locale's country. If the CSV has no rows for that country, use the `us` rows as source keywords and translate/localize them for the target locale.
+
+Even when manual CSV keywords exist, review the locale-specific saved keyword research alongside them. Use saved research to validate relevance, avoid weak translations, and fill remaining title, subtitle, and keyword-field capacity without creating duplicates.

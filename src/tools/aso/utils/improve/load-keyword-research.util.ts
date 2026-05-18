@@ -15,6 +15,231 @@ interface RecommendedKeyword {
   rationale: string;
 }
 
+interface ManualKeywordCsvRow {
+  filePath: string;
+  keyword: string;
+  platform: string;
+  storeDomain: string;
+  store: string;
+  ranking: string;
+  popularity: string;
+  difficulty: string;
+  lastUpdate: string;
+}
+
+interface ManualKeywordCsvResult {
+  rows: ManualKeywordCsvRow[];
+  isFallback: boolean;
+  sourceStoreDomain: string;
+  targetStoreDomain: string;
+}
+
+const LOCALE_STORE_DOMAIN_OVERRIDES: Record<string, string> = {
+  ar: "sa",
+  en: "us",
+  "en-US": "us",
+  "zh-Hans": "cn",
+  "zh-Hant": "tw",
+};
+
+function parseCsvLine(line: string): string[] {
+  const values: string[] = [];
+  let current = "";
+  let isQuoted = false;
+
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    const nextChar = line[index + 1];
+
+    if (char === '"' && isQuoted && nextChar === '"') {
+      current += '"';
+      index += 1;
+      continue;
+    }
+
+    if (char === '"') {
+      isQuoted = !isQuoted;
+      continue;
+    }
+
+    if (char === "," && !isQuoted) {
+      values.push(current);
+      current = "";
+      continue;
+    }
+
+    current += char;
+  }
+
+  values.push(current);
+  return values;
+}
+
+function getLocaleStoreDomain(locale: string): string {
+  const override = LOCALE_STORE_DOMAIN_OVERRIDES[locale];
+  if (override) {
+    return override;
+  }
+
+  const localeParts = locale.split("-");
+  return (localeParts[1] || localeParts[0] || "").toLowerCase();
+}
+
+function loadManualKeywordCsvRowsForStoreDomain(
+  slug: string,
+  storeDomain: string
+): ManualKeywordCsvRow[] {
+  const productResearchDir = path.join(getKeywordResearchDir(), "products", slug);
+  if (!fs.existsSync(productResearchDir)) {
+    return [];
+  }
+
+  const csvFiles = fs
+    .readdirSync(productResearchDir)
+    .filter((file) => file.endsWith(".csv"))
+    .sort();
+
+  if (csvFiles.length === 0) {
+    return [];
+  }
+
+  const rows: ManualKeywordCsvRow[] = [];
+
+  for (const file of csvFiles) {
+    const filePath = path.join(productResearchDir, file);
+    const raw = fs.readFileSync(filePath, "utf-8").trim();
+    if (!raw) {
+      continue;
+    }
+
+    const [headerLine, ...dataLines] = raw.split(/\r?\n/);
+    if (!headerLine) {
+      continue;
+    }
+
+    const headers = parseCsvLine(headerLine).map((header) => header.trim());
+    const getValue = (values: string[], header: string): string => {
+      const index = headers.indexOf(header);
+      return index >= 0 ? values[index]?.trim() || "" : "";
+    };
+
+    for (const line of dataLines) {
+      if (!line.trim()) {
+        continue;
+      }
+
+      const values = parseCsvLine(line);
+      const rowStoreDomain = getValue(values, "Store Domain").toLowerCase();
+      if (rowStoreDomain !== storeDomain) {
+        continue;
+      }
+
+      const keyword = getValue(values, "Keyword");
+      if (!keyword) {
+        continue;
+      }
+
+      rows.push({
+        filePath,
+        keyword,
+        platform: getValue(values, "Platform"),
+        storeDomain: rowStoreDomain,
+        store: getValue(values, "Store"),
+        ranking: getValue(values, "Ranking"),
+        popularity: getValue(values, "Popularity"),
+        difficulty: getValue(values, "Difficulty"),
+        lastUpdate: getValue(values, "Last Update"),
+      });
+    }
+  }
+
+  const seenKeywords = new Set<string>();
+  return rows.filter((row) => {
+    const normalized = row.keyword.toLowerCase();
+    if (seenKeywords.has(normalized)) {
+      return false;
+    }
+
+    seenKeywords.add(normalized);
+    return true;
+  });
+}
+
+function loadManualKeywordCsv(slug: string, locale: string): ManualKeywordCsvResult {
+  const targetStoreDomain = getLocaleStoreDomain(locale);
+  const localeRows = loadManualKeywordCsvRowsForStoreDomain(
+    slug,
+    targetStoreDomain
+  );
+
+  if (localeRows.length > 0) {
+    return {
+      rows: localeRows,
+      isFallback: false,
+      sourceStoreDomain: targetStoreDomain,
+      targetStoreDomain,
+    };
+  }
+
+  const usRows =
+    targetStoreDomain === "us"
+      ? []
+      : loadManualKeywordCsvRowsForStoreDomain(slug, "us");
+
+  return {
+    rows: usRows,
+    isFallback: usRows.length > 0,
+    sourceStoreDomain: "us",
+    targetStoreDomain,
+  };
+}
+
+function formatManualKeywordCsvRows(
+  result: ManualKeywordCsvResult,
+  locale: string
+): string {
+  const { rows, isFallback, sourceStoreDomain, targetStoreDomain } = result;
+  const sourceFiles = [...new Set(rows.map((row) => row.filePath))];
+  const lines: string[] = [];
+
+  lines.push(
+    `### Manual Priority Keywords CSV (${locale} / ${targetStoreDomain})`
+  );
+  lines.push(`Source: ${sourceFiles.join(", ")}`);
+  if (isFallback) {
+    lines.push(
+      `Fallback: No CSV rows found for Store Domain "${targetStoreDomain}". Using "${sourceStoreDomain}" CSV keywords as translation source for ${locale}.`
+    );
+    lines.push(
+      "Translation rule: translate/localize these US keywords into the target locale before placing them in title, subtitle, keywords, or landing copy."
+    );
+  }
+  lines.push(
+    "Priority: Apply these CSV keywords before saved keyword research, but still use locale saved research alongside them to validate relevance and fill remaining opportunities."
+  );
+  lines.push(
+    "Placement rule: put the strongest terms in title first, then subtitle, then the keywords field. Do not duplicate the same keyword across title, subtitle, and keywords."
+  );
+  lines.push("");
+  lines.push("**CSV Priority Keywords:**");
+
+  rows.slice(0, 30).forEach((row, index) => {
+    const metrics = [
+      row.platform ? `platform: ${row.platform}` : "",
+      row.store ? `store: ${row.store}` : "",
+      row.ranking ? `rank: ${row.ranking}` : "",
+      row.popularity ? `popularity: ${row.popularity}` : "",
+      row.difficulty ? `difficulty: ${row.difficulty}` : "",
+      row.lastUpdate ? `updated: ${row.lastUpdate}` : "",
+    ].filter(Boolean);
+
+    lines.push(`${index + 1}. **${row.keyword}**${metrics.length > 0 ? ` (${metrics.join(", ")})` : ""}`);
+  });
+
+  lines.push("\n----");
+  return lines.join("\n");
+}
+
 function extractRecommended(data: any): RecommendedKeyword[] {
   const summary = data?.summary || data?.data?.summary;
   const recommended = summary?.recommendedKeywords;
@@ -404,10 +629,20 @@ export function loadKeywordResearchForLocale(
     locale
   );
 
+  const manualKeywordCsv = loadManualKeywordCsv(slug, locale);
+  const manualKeywordSections =
+    manualKeywordCsv.rows.length > 0
+      ? [formatManualKeywordCsvRows(manualKeywordCsv, locale)]
+      : [];
+
   // Try to load the locale's own keyword research
   const result = loadKeywordResearchForLocaleInternal(slug, locale);
   if (result) {
-    return { ...result, isFallback: false };
+    return {
+      ...result,
+      sections: [...manualKeywordSections, ...result.sections],
+      isFallback: false,
+    };
   }
 
   // If locale-specific research not found, try fallback locales (en-US, en)
@@ -426,7 +661,7 @@ export function loadKeywordResearchForLocale(
       );
       return {
         entries: fallbackResult.entries,
-        sections: sectionsWithNotice,
+        sections: [...manualKeywordSections, ...sectionsWithNotice],
         researchDir: fallbackResult.researchDir,
         isFallback: true,
         fallbackLocale,
@@ -435,5 +670,10 @@ export function loadKeywordResearchForLocale(
   }
 
   // No research found at all
-  return { entries: [], sections: [], researchDir, isFallback: false };
+  return {
+    entries: [],
+    sections: manualKeywordSections,
+    researchDir,
+    isFallback: false,
+  };
 }

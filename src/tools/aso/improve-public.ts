@@ -87,6 +87,7 @@ export const improvePublicTool = {
 
 ## HOW THIS TOOL WORKS
 This tool returns a PROMPT containing:
+- Product-level manual CSV keyword data from .aso/keywordResearch/products/[slug]/*.csv when present
 - Saved keyword research data (Tier 1/2/3 keywords with traffic/difficulty scores)
 - Current locale data
 - Optimization instructions
@@ -108,9 +109,11 @@ This tool returns a PROMPT containing:
 - **Stage 2:** Localize to other languages - **each locale uses its OWN keyword research**
 
 ## KEYWORD SOURCES (Per Locale)
-- **Priority 1:** Uses each locale's SAVED keyword research from .aso/keywordResearch/products/[slug]/locales/[locale]/
-- **Priority 2 (Fallback):** If locale-specific research is missing, falls back to en-US/en keywords and TRANSLATES them
+- **Priority 1:** Uses product-level manual CSV keywords from .aso/keywordResearch/products/[slug]/*.csv. It checks the target locale's country Store Domain first; if missing, it uses US CSV keywords as a translation/localization source.
+- **Priority 2:** Uses each locale's SAVED keyword research from .aso/keywordResearch/products/[slug]/locales/[locale]/ alongside the CSV to validate relevance and fill remaining opportunities.
+- **Priority 3 (Fallback):** If locale-specific saved research is missing, falls back to en-US/en saved research and TRANSLATES it
 - iOS and Android research are automatically combined per locale (iOS prioritized)
+- Title, subtitle, and keywords must be filled in that importance order, with no repeated keyword terms across the three fields
 
 **CRITICAL:** Only processes existing locale files. Does NOT create new files.`,
   inputSchema,
@@ -185,8 +188,8 @@ export async function handleImprovePublic(
     );
   }
 
-  // Load keyword research data per locale (from .aso/keywordResearch)
-  // If locale-specific research is not found, fallback to en-US/en and translate
+  // Load keyword research data per locale (manual product CSV first, then
+  // .aso/keywordResearch locale files, then en-US/en fallback for translation).
   const keywordResearchByLocale: Record<string, string[]> = {};
   const keywordResearchDirByLocale: Record<string, string> = {};
   const keywordResearchFallbackByLocale: Record<
