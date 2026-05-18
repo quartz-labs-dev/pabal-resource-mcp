@@ -141,7 +141,7 @@ This locale has data from BOTH Google Play and App Store. Use the following merg
 - Keep proper nouns and technical terms in English when translating
 - Keep terms like "Always-On Display", "E-Ink", "Android", brand names (e.g., "Boox", "Meebook"), and other technical/proper nouns in English
 - Only translate descriptive text, not technical terminology or proper nouns
-- Example: "Always-On Display" should remain "Always-On Display" in Korean, not translated to "항상 켜진 화면"
+- Example: "Always-On Display" should remain "Always-On Display" in translated locales, not translated into a generic phrase like "screen that is always on"
 
 ${screenshotPaths ? `
 **Screenshot Paths:**
@@ -153,4 +153,3 @@ Copy screenshots from these directories to public/products/[slug]/screenshots/ a
 ` : ""}
 **Important:** Return only valid JSON, without any additional explanation.`;
 }
-

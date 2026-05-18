@@ -1,7 +1,7 @@
 /**
  * ASO Data Converter
  *
- * config.json (source of truth) ↔ aso-data.json (build artifact) 변환 유틸리티
+ * Converts between config.json (source of truth) and aso-data.json (build artifact).
  */
 
 // Import Node.js modules - these will be replaced with empty modules in browser builds
@@ -94,8 +94,8 @@ function generateFullDescription(
 }
 
 /**
- * config.json에서 ASO 데이터를 읽어옵니다
- * 새 구조: config.json (메타데이터) + locales/{locale}.json (콘텐츠)
+ * Read ASO data from config.json.
+ * New structure: config.json (metadata) + locales/{locale}.json (content)
  */
 export function loadAsoFromConfig(slug: string): AsoData {
   const productsDir = getProductsDir();
@@ -157,7 +157,7 @@ export function loadAsoFromConfig(slug: string): AsoData {
     const defaultLocale = config.content?.defaultLocale || DEFAULT_LOCALE;
     const asoData: AsoData = {};
 
-    // Google Play 데이터 생성
+    // Build Google Play data
     if (config.packageName) {
       const googlePlayLocales: Record<string, GooglePlayAsoData> = {};
       const metadata: ProductMetadata = config.metadata || {};
@@ -255,7 +255,7 @@ export function loadAsoFromConfig(slug: string): AsoData {
       }
     }
 
-    // App Store 데이터 생성
+    // Build App Store data
     if (config.bundleId) {
       const appStoreLocales: Record<string, AppStoreAsoData> = {};
       const metadata: ProductMetadata = config.metadata || {};
@@ -316,15 +316,15 @@ export function loadAsoFromConfig(slug: string): AsoData {
           subtitle: aso.subtitle,
           description: generateFullDescription(localeData, metadata),
           keywords: Array.isArray(aso.keywords)
-            ? aso.keywords.join(", ")
+            ? aso.keywords.join(",")
             : aso.keywords,
           promotionalText: undefined,
           bundleId: config.bundleId!,
           locale,
           screenshots: {
-            // 폰 스크린샷을 iphone65로 매핑
+            // Map phone screenshots to iphone65
             iphone65: localeScreenshots.phone || [],
-            // 태블릿 스크린샷을 ipadPro129로 매핑
+            // Map tablet screenshots to ipadPro129
             ipadPro129: localeScreenshots.tablet,
           },
         };
@@ -377,7 +377,7 @@ export function loadAsoFromConfig(slug: string): AsoData {
 }
 
 /**
- * config.json에 ASO 데이터를 저장합니다
+ * Save ASO data to config.json.
  */
 export function saveAsoToConfig(slug: string, config: ProductConfig): void {
   const productsDir = getProductsDir();
@@ -387,12 +387,12 @@ export function saveAsoToConfig(slug: string, config: ProductConfig): void {
 }
 
 /**
- * ASO 데이터를 지정한 ASO 디렉토리에 저장합니다
+ * Save ASO data to the configured ASO directory.
  */
 export function saveAsoToAsoDir(slug: string, asoData: AsoData): void {
   const rootDir = getPushDataDir();
 
-  // Google Play 데이터 저장
+  // Save Google Play data
   if (asoData.googlePlay) {
     const asoPath = path.join(
       rootDir,
@@ -427,7 +427,7 @@ export function saveAsoToAsoDir(slug: string, asoData: AsoData): void {
     );
   }
 
-  // App Store 데이터 저장
+  // Save App Store data
   if (asoData.appStore) {
     const asoPath = path.join(
       rootDir,

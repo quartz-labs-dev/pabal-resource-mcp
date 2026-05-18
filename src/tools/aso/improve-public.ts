@@ -2,6 +2,10 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { loadAsoFromConfig } from "../../utils/aso-converter.js";
 import {
+  ASO_OVERVIEW_DOC_PATH,
+  FIELD_LIMITS_DOC_PATH,
+} from "../../utils/aso-validation.util.js";
+import {
   loadProductLocales,
   resolvePrimaryLocale,
 } from "./utils/improve/load-product-locales.util.js";
@@ -14,8 +18,6 @@ import {
 } from "./utils/improve/generate-aso-prompt.util.js";
 import { saveLocaleFile } from "./utils/improve/save-locale-file.util.js";
 import { loadKeywordResearchForLocale } from "./utils/improve/load-keyword-research.util.js";
-
-const FIELD_LIMITS_DOC_PATH = "docs/aso/ASO_FIELD_LIMITS.md";
 
 const toJsonSchema: (
   schema: z.ZodTypeAny,
@@ -88,6 +90,7 @@ This tool returns a PROMPT containing:
 - Saved keyword research data (Tier 1/2/3 keywords with traffic/difficulty scores)
 - Current locale data
 - Optimization instructions
+- ASO basics from ${ASO_OVERVIEW_DOC_PATH} and field limits from ${FIELD_LIMITS_DOC_PATH}
 
 **YOU MUST:**
 1. Read the returned prompt carefully

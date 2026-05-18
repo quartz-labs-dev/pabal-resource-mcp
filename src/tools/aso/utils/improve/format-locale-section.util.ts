@@ -4,8 +4,10 @@ import {
   analyzeKeywords,
   generateKeywordResearchQueries,
 } from "./keyword-analysis.util.js";
-
-const FIELD_LIMITS_DOC_PATH = "docs/aso/ASO_FIELD_LIMITS.md";
+import {
+  ASO_OVERVIEW_DOC_PATH,
+  FIELD_LIMITS_DOC_PATH,
+} from "../../../../utils/aso-validation.util.js";
 
 interface FormatLocaleSectionArgs {
   slug: string;
@@ -100,7 +102,9 @@ function generateKeywordSuggestions(args: {
   suggestions += `4. **Short Description**: Include searchable keywords (80 char limit)\n`;
   suggestions += `5. **Full Description**: Place primary keywords in first 2-3 lines, distribute naturally throughout\n`;
   suggestions += `6. **template.intro**: Use up to 300 chars to naturally incorporate more keywords and provide richer context\n`;
-  suggestions += `7. **App Store Keywords**: 100 char limit, comma-separated, avoid duplicates from name/subtitle\n\n`;
+  suggestions += `7. **App Store Keywords**: 100 char limit, comma-separated with commas only/no spaces, avoid duplicates from name/subtitle, prefer singular forms, order important keywords first, and fill as close to 100 chars as possible with relevant keywords only\n`;
+  suggestions += `8. **Keyword Selection**: Follow ${ASO_OVERVIEW_DOC_PATH}: popularity >=20 when available, achievable difficulty, beatable top-10 competitors, strong relevance, and target-user search intent\n`;
+  suggestions += `9. **Field Limits**: Follow ${FIELD_LIMITS_DOC_PATH}\n\n`;
 
   if (category) {
     suggestions += `### Category-Based Keyword Strategy:\n`;
@@ -137,7 +141,7 @@ export function formatLocaleSection(
 
   const lengthOf = (value?: string) => (value ? value.length : 0);
   const keywordsLength = Array.isArray(aso.keywords)
-    ? aso.keywords.join(", ").length
+    ? aso.keywords.join(",").length
     : lengthOf(typeof aso.keywords === "string" ? aso.keywords : undefined);
 
   const header = `--- ${locale}${
@@ -199,4 +203,3 @@ export function formatLocaleSection(
 
   return `${header}\n${stats}\n\n${keywordAnalysis}\n\`\`\`json\n${json}\n\`\`\`\n`;
 }
-

@@ -3,6 +3,7 @@ import { zodToJsonSchema } from "zod-to-json-schema";
 import path from "node:path";
 import { loadAsoFromConfig } from "../../utils/aso-converter.js";
 import {
+  ASO_OVERVIEW_DOC_PATH,
   FIELD_LIMITS_DOC_PATH,
   sanitizeAsoData,
   validateFieldLimits,
@@ -295,7 +296,7 @@ This tool:
 4. Copies/downloads screenshots to .aso/pushData/products/[slug]/store/screenshots/
 5. Validates text field lengths against ${FIELD_LIMITS_DOC_PATH} (fails if over limits)
 
-Before running, review ${FIELD_LIMITS_DOC_PATH} for per-store limits. This prepares data for pushing to stores without actually uploading.`,
+Before running, review ${ASO_OVERVIEW_DOC_PATH} for ASO strategy and ${FIELD_LIMITS_DOC_PATH} for per-store limits. This prepares data for pushing to stores without actually uploading.`,
   inputSchema,
 };
 
@@ -480,7 +481,7 @@ export async function handlePublicToAso(
     responseText += `App Store: ${localeCounts.appStore} locale(s)\n`;
   }
   responseText += `\nNext step: Push to stores using pabal-store-api-mcp's aso-push tool`;
-  responseText += `\nReference: ${FIELD_LIMITS_DOC_PATH}`;
+  responseText += `\nReferences: ${ASO_OVERVIEW_DOC_PATH}, ${FIELD_LIMITS_DOC_PATH}`;
   if (sanitizeWarnings.length > 0) {
     responseText += `\nSanitized invalid characters:\n- ${sanitizeWarnings.join(
       "\n- "

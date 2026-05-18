@@ -1,4 +1,18 @@
-const FIELD_LIMITS_DOC_PATH = "docs/aso/ASO_FIELD_LIMITS.md";
+import {
+  ASO_OVERVIEW_DOC_PATH,
+  FIELD_LIMITS_DOC_PATH,
+} from "../../../../utils/aso-validation.util.js";
+
+const ASO_RULES_SUMMARY = [
+  `Use ${ASO_OVERVIEW_DOC_PATH} for keyword strategy and ${FIELD_LIMITS_DOC_PATH} for hard limits.`,
+  '`aso.title`: keep app name + the most relevant high-priority keyword, usually `App Name: Primary Keyword`.',
+  '`aso.subtitle`: use important keywords that do not repeat the title.',
+  '`aso.keywords`: comma-separated with commas only, no spaces, no duplicates, no title/subtitle repetition.',
+  '`aso.keywords`: use as much of the 100-character limit as possible with relevant keywords; do not leave meaningful capacity unused and do not use filler.',
+  '`aso.keywords`: split phrase intent into reusable single terms when appropriate, e.g. `sound,relaxing,rain` for "relaxing sound" + "rain sound".',
+  '`aso.keywords`: prefer singular forms, allow real searched misspellings, and order by importance.',
+  'Choose keywords with popularity >=20, achievable difficulty, beatable top-10 competitors, strong relevance, and likely target-user search intent.',
+].join("\n- ");
 
 interface GenerateAsoPromptArgs {
   slug: string;
@@ -45,6 +59,9 @@ export function generatePrimaryOptimizationPrompt(
     category || "N/A"
   } | Primary: ${primaryLocale}\n\n`;
 
+  prompt += `## ASO Basics\n\n`;
+  prompt += `- ${ASO_RULES_SUMMARY}\n\n`;
+
   prompt += `## Task\n\n`;
   prompt += `Optimize the PRIMARY locale (${primaryLocale}) using **saved keyword research** + full ASO field optimization.\n\n`;
 
@@ -72,12 +89,12 @@ export function generatePrimaryOptimizationPrompt(
   prompt += `**Apply keywords strategically based on tier priority:**\n\n`;
   prompt += `### Tier 1 Keywords (Core) → Title & Subtitle\n`;
   prompt += `- \`aso.title\` (≤30): **"App Name: [Tier1 Keyword]"** format\n`;
-  prompt += `  - App name in English, keyword in target language, uppercase after colon\n`;
+  prompt += `  - App name in English, keyword in target language with natural casing\n`;
   prompt += `  - **Do NOT translate/rename the app name**\n`;
-  prompt += `- \`aso.subtitle\` (≤30): Use remaining Tier 1 keywords\n`;
+  prompt += `- \`aso.subtitle\` (≤30): Use remaining Tier 1 keywords without repeating title terms\n`;
   prompt += `- \`aso.shortDescription\` (≤80): Tier 1 + Tier 2 keywords (no emojis/CAPS)\n\n`;
   prompt += `### Tier 2 Keywords (Feature) → Keywords Field & Descriptions\n`;
-  prompt += `- \`aso.keywords\` (≤100): ALL tiers, comma-separated (Tier 1 first, then Tier 2, then Tier 3)\n`;
+  prompt += `- \`aso.keywords\` (≤100): ALL tiers, comma-separated with commas only and no spaces (Tier 1 first, then Tier 2, then Tier 3); fill as close to 100 chars as possible using relevant keywords only\n`;
   prompt += `- \`landing.hero.title\`: Tier 1 + Tier 2 keywords\n`;
   prompt += `- \`landing.hero.description\`: Tier 2 keywords naturally integrated\n`;
   prompt += `- \`landing.screenshots.images[].title\`: Tier 2 keywords\n`;
@@ -97,7 +114,9 @@ export function generatePrimaryOptimizationPrompt(
 
   prompt += `## Step 3: Validate (after applying all keywords)\n\n`;
   prompt += `Check all limits using ${FIELD_LIMITS_DOC_PATH}: title ≤30, subtitle ≤30, shortDescription ≤80, keywords ≤100, intro ≤300, outro ≤200\n`;
-  prompt += `- Remove keyword duplicates (unique list; avoid repeating title/subtitle terms verbatim)\n`;
+  prompt += `- Apply ${ASO_OVERVIEW_DOC_PATH}: keyword popularity ≥20 where available, achievable difficulty, relevance, likely user intent, singular forms, important keywords first\n`;
+  prompt += `- Maximize keyword field utilization: target 90-100/100 chars when enough relevant keywords exist; explain any lower count\n`;
+  prompt += `- Remove keyword duplicates (unique list; avoid repeating title/subtitle terms verbatim; no spaces after commas)\n`;
   prompt += `- Ensure App Store/Play Store rules from ${FIELD_LIMITS_DOC_PATH} are satisfied (no disallowed characters/formatting)\n\n`;
 
   prompt += `## Current Data\n\n`;
@@ -122,13 +141,13 @@ export function generatePrimaryOptimizationPrompt(
   prompt += `   - title: X/30 ✓/✗\n`;
   prompt += `   - subtitle: X/30 ✓/✗\n`;
   prompt += `   - shortDescription: X/80 ✓/✗\n`;
-  prompt += `   - keywords: X/100 ✓/✗ (deduped ✓/✗)\n`;
+  prompt += `   - keywords: X/100 ✓/✗ (target 90-100 when possible; deduped ✓/✗)\n`;
   prompt += `   - intro: X/300 ✓/✗\n`;
   prompt += `   - outro: X/200 ✓/✗\n`;
   prompt += `   - Store rules (${FIELD_LIMITS_DOC_PATH}): ✓/✗\n`;
   prompt += `   - Density: X% (2.5-3%) ✓/✗\n\n`;
 
-  prompt += `**Reference**: ${FIELD_LIMITS_DOC_PATH}\n\n`;
+  prompt += `**References**: ${ASO_OVERVIEW_DOC_PATH}, ${FIELD_LIMITS_DOC_PATH}\n\n`;
 
   prompt += `---\n\n`;
   prompt += `## Next Step\n\n`;
@@ -177,6 +196,9 @@ export function generateKeywordLocalizationPrompt(
     ", "
   )}\n\n`;
 
+  prompt += `## ASO Basics\n\n`;
+  prompt += `- ${ASO_RULES_SUMMARY}\n\n`;
+
   if (batchIndex !== undefined && totalBatches !== undefined) {
     prompt += `**⚠️ BATCH PROCESSING MODE**\n\n`;
     prompt += `This is batch ${batchIndex + 1} of ${totalBatches}.\n`;
@@ -192,7 +214,7 @@ export function generateKeywordLocalizationPrompt(
   prompt += `For EACH target locale in this batch:\n`;
   prompt += `1. Use SAVED keyword research (see per-locale data below). Do NOT invent keywords.\n`;
   prompt += `2. **Replace ONLY keywords with optimized keywords** - keep ALL existing content, structure, tone, and context unchanged. Only swap keywords for better ASO keywords.\n`;
-  prompt += `3. After all keywords are applied, validate character limits + store rules (${FIELD_LIMITS_DOC_PATH}) + keyword duplication\n`;
+  prompt += `3. After all keywords are applied, validate ASO basics (${ASO_OVERVIEW_DOC_PATH}) + character limits/store rules (${FIELD_LIMITS_DOC_PATH}) + keyword duplication\n`;
   prompt += `4. **SAVE the updated JSON to file** using the save-locale-file tool (only if file exists)\n\n`;
 
   prompt += `## Optimized Primary (Reference)\n\n`;
@@ -249,7 +271,7 @@ export function generateKeywordLocalizationPrompt(
       prompt += `No keyword research found at ${researchDir}.\n`;
       prompt += `**Use the ENGLISH FALLBACK section above** and TRANSLATE all keywords to ${loc}.\n\n`;
     } else {
-      // ❌ No research anywhere - extract from optimizedPrimary
+      // No research anywhere - extract from optimizedPrimary
       prompt += `### Locale ${loc}: ❌ No research available\n`;
       prompt += `No keyword research found. Extract keywords from \`aso.keywords\` in optimizedPrimary and **TRANSLATE them to ${loc}**.\n\n`;
     }
@@ -263,12 +285,12 @@ export function generateKeywordLocalizationPrompt(
   prompt += `2. Replace \`aso.keywords\` array with optimized keywords (keep same count/structure)\n`;
   prompt += `3. **TITLE FORMAT**: \`aso.title\` must follow **"App Name: Primary Keyword"** format:\n`;
   prompt += `   - App name: **ALWAYS in English** (e.g., "Aurora EOS", "Timeline", "Recaply)\n`;
-  prompt += `   - Primary keyword: **In target language** (e.g., "오로라 예보" for Korean, "オーロラ予報" for Japanese)\n`;
-  prompt += `   - Example: "Aurora EOS: 오로라 예보" (Korean), "Aurora EOS: オーロラ予報" (Japanese)\n`;
-  prompt += `   - The keyword after the colon must start with an uppercase letter\n`;
+  prompt += `   - Primary keyword: **In target language** (e.g., "aurora forecast" for English, "pronostico de auroras" for Spanish)\n`;
+  prompt += `   - Example: "Aurora EOS: Aurora Forecast" (English), "Aurora EOS: Pronostico de Auroras" (Spanish)\n`;
+  prompt += `   - Use natural casing for the target language\n`;
   prompt += `   - **Do NOT translate/rename the app name**; keep the original English app name across all locales.\n`;
   prompt += `   - **Only replace the keyword part** - keep the app name and format structure unchanged\n`;
-  prompt += `4. Deduplicate keywords: final \`aso.keywords\` must be unique and should not repeat title/subtitle terms verbatim\n`;
+  prompt += `4. Deduplicate keywords: final \`aso.keywords\` must be unique, comma-only without spaces, as close to 100 chars as possible, and should not repeat title/subtitle terms verbatim\n`;
   prompt += `5. **Replace keywords in existing sentences** - swap ONLY the keywords, keep everything else:\n`;
   prompt += `   - **Keep original sentence structure exactly as is**\n`;
   prompt += `   - **Keep original tone and messaging unchanged**\n`;
@@ -288,9 +310,9 @@ export function generateKeywordLocalizationPrompt(
   prompt += `   - **DO NOT rewrite or restructure content** - only replace keywords\n\n`;
   prompt += `**Example** (keyword replacement only, content unchanged):\n`;
   prompt += `- Original: "Track aurora with real-time forecasts"\n`;
-  prompt += `- Optimized keywords: 오로라, 예보, 실시간\n`;
-  prompt += `- Result: "Track 오로라 with 실시간 예보" (keywords replaced, structure kept)\n`;
-  prompt += `  OR: "실시간 예보로 오로라 추적" (if natural keyword placement requires minor word order, but keep meaning identical)\n\n`;
+  prompt += `- Optimized keywords: aurora,forecast,real-time\n`;
+  prompt += `- Result: "Track aurora with real-time forecasts" (keywords replaced, structure kept)\n`;
+  prompt += `  OR: "Track real-time aurora forecasts" (if natural keyword placement requires minor word order, but keep meaning identical)\n\n`;
 
   prompt += `## Current Translated Locales (This Batch)\n\n`;
   nonPrimaryLocales.forEach((loc) => {
@@ -313,7 +335,7 @@ export function generateKeywordLocalizationPrompt(
   prompt += `   - \`landing.reviews.title\` and \`landing.reviews.description\`\n`;
   prompt += `   - **For each field: Replace keywords only, keep existing content structure and meaning unchanged**\n`;
   prompt += `3. **CRITICAL**: Ensure ALL landing fields are translated (not English)\n`;
-  prompt += `4. After swapping keywords, validate limits + store rules (${FIELD_LIMITS_DOC_PATH}) + keyword duplication (unique list; avoid repeating title/subtitle terms verbatim)\n`;
+  prompt += `4. After swapping keywords, validate ASO basics (${ASO_OVERVIEW_DOC_PATH}) + limits/store rules (${FIELD_LIMITS_DOC_PATH}) + keyword utilization (target 90-100/100 when enough relevant keywords exist) + keyword duplication (unique list; avoid repeating title/subtitle terms verbatim; no spaces after commas)\n`;
   prompt += `5. **SAVE the updated JSON to file** using save-locale-file tool\n`;
   prompt += `6. Move to next locale in batch\n\n`;
 
@@ -354,7 +376,7 @@ export function generateKeywordLocalizationPrompt(
   prompt += `   - title: X/30 ✓/✗\n`;
   prompt += `   - subtitle: X/30 ✓/✗\n`;
   prompt += `   - shortDescription: X/80 ✓/✗\n`;
-  prompt += `   - keywords: X/100 ✓/✗ (deduped ✓/✗; not repeating title/subtitle)\n`;
+  prompt += `   - keywords: X/100 ✓/✗ (target 90-100 when possible; deduped ✓/✗; comma-only/no spaces ✓/✗; not repeating title/subtitle)\n`;
   prompt += `   - intro: X/300 ✓/✗\n`;
   prompt += `   - outro: X/200 ✓/✗\n`;
   prompt += `   - Store rules (${FIELD_LIMITS_DOC_PATH}): ✓/✗\n\n`;

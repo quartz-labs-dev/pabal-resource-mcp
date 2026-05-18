@@ -6,6 +6,7 @@ import {
 import { DEFAULT_LOCALE } from "../constants/unified-locales.js";
 
 export const FIELD_LIMITS_DOC_PATH = "docs/aso/ASO_FIELD_LIMITS.md";
+export const ASO_OVERVIEW_DOC_PATH = "docs/aso/ASO_OVERVIEW.md";
 
 export const APP_STORE_LIMITS = {
   name: 30,
@@ -39,6 +40,13 @@ export interface ValidationIssue {
 export interface SanitizeResult {
   sanitizedData: AsoData;
   warnings: string[];
+}
+
+export interface KeywordValidationIssue {
+  locale: string;
+  duplicates: string[];
+  formatting: string[];
+  repeatedFromTitleOrSubtitle: string[];
 }
 
 /**
@@ -280,14 +288,60 @@ export function checkKeywordDuplicates(keywords: string): {
   };
 }
 
+const normalizeKeyword = (value: string): string => value.trim().toLowerCase();
+
+function getTitleAndSubtitleKeywordSet(
+  name: string | undefined,
+  subtitle: string | undefined
+): Set<string> {
+  const sourceText = [name, subtitle]
+    .filter((value): value is string => Boolean(value))
+    .join(" ")
+    .toLowerCase();
+  const terms = sourceText
+    .split(/[^\p{L}\p{N}]+/u)
+    .map((term) => term.trim())
+    .filter(Boolean);
+
+  return new Set(terms);
+}
+
+function validateKeywordRules(
+  keywords: string,
+  name: string | undefined,
+  subtitle: string | undefined
+): Omit<KeywordValidationIssue, "locale"> {
+  const duplicateResult = checkKeywordDuplicates(keywords);
+  const keywordList = keywords
+    .split(",")
+    .map(normalizeKeyword)
+    .filter(Boolean);
+  const titleAndSubtitleKeywords = getTitleAndSubtitleKeywordSet(
+    name,
+    subtitle
+  );
+  const formatting: string[] = [];
+
+  if (/\s/.test(keywords)) {
+    formatting.push("Use comma-only keywords with no spaces");
+  }
+
+  const repeatedFromTitleOrSubtitle = keywordList.filter((keyword) => {
+    return titleAndSubtitleKeywords.has(keyword);
+  });
+
+  return {
+    duplicates: duplicateResult.duplicates,
+    formatting,
+    repeatedFromTitleOrSubtitle,
+  };
+}
+
 /**
- * Validate keywords field for duplicates
+ * Validate keywords field against ASO basics
  */
-export function validateKeywords(configData: AsoData): {
-  locale: string;
-  duplicates: string[];
-}[] {
-  const issues: { locale: string; duplicates: string[] }[] = [];
+export function validateKeywords(configData: AsoData): KeywordValidationIssue[] {
+  const issues: KeywordValidationIssue[] = [];
 
   if (configData.appStore) {
     const appStoreData = configData.appStore;
@@ -297,9 +351,18 @@ export function validateKeywords(configData: AsoData): {
 
     for (const [locale, data] of Object.entries(locales)) {
       if (data.keywords) {
-        const result = checkKeywordDuplicates(data.keywords);
-        if (result.hasDuplicates) {
-          issues.push({ locale, duplicates: result.duplicates });
+        const result = validateKeywordRules(
+          data.keywords,
+          data.name,
+          data.subtitle
+        );
+        const hasIssues =
+          result.duplicates.length > 0 ||
+          result.formatting.length > 0 ||
+          result.repeatedFromTitleOrSubtitle.length > 0;
+
+        if (hasIssues) {
+          issues.push({ locale, ...result });
         }
       }
     }
@@ -307,8 +370,6 @@ export function validateKeywords(configData: AsoData): {
 
   return issues;
 }
-
-
 
 
 

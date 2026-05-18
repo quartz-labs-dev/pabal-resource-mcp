@@ -2,6 +2,7 @@ import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { loadAsoFromConfig } from "../../utils/aso-converter.js";
 import {
+  ASO_OVERVIEW_DOC_PATH,
   FIELD_LIMITS_DOC_PATH,
   APP_STORE_LIMITS,
   GOOGLE_PLAY_LIMITS,
@@ -65,8 +66,9 @@ export const validateAsoTool = {
    - App Store: name ≤${APP_STORE_LIMITS.name}, subtitle ≤${APP_STORE_LIMITS.subtitle}, keywords ≤${APP_STORE_LIMITS.keywords}, description ≤${APP_STORE_LIMITS.description}
    - Google Play: title ≤${GOOGLE_PLAY_LIMITS.title}, shortDescription ≤${GOOGLE_PLAY_LIMITS.shortDescription}, fullDescription ≤${GOOGLE_PLAY_LIMITS.fullDescription}
 
-2. **Keyword Duplicates** (App Store only):
-   - Checks for duplicate keywords in comma-separated list
+2. **Keyword Rules** (App Store only):
+   - Checks duplicate keywords, comma-only/no-space formatting, and title/subtitle repetition
+   - Strategy reference: ${ASO_OVERVIEW_DOC_PATH}
 
 3. **Invalid Characters**:
    - Control characters, BOM, zero-width/invisible characters, variation selectors
@@ -257,16 +259,34 @@ export async function handleValidateAso(
   results.push(formatValidationIssues(filteredIssues));
   results.push("");
 
-  // 3. Check keyword duplicates
+  // 3. Check keyword rules
   const keywordIssues = validateKeywords(dataToValidate);
   const filteredKeywordIssues = locale
     ? keywordIssues.filter((issue) => issue.locale === locale)
     : keywordIssues;
 
   if (filteredKeywordIssues.length > 0) {
-    results.push(`## Keyword Duplicates\n`);
+    results.push(`## Keyword Rule Violations\n`);
     for (const issue of filteredKeywordIssues) {
-      results.push(`- [${issue.locale}]: ${issue.duplicates.join(", ")}`);
+      if (issue.duplicates.length > 0) {
+        results.push(
+          `- [${issue.locale}] duplicates: ${issue.duplicates.join(", ")}`
+        );
+      }
+      if (issue.formatting.length > 0) {
+        results.push(
+          `- [${issue.locale}] formatting: ${issue.formatting.join(", ")}`
+        );
+      }
+      if (issue.repeatedFromTitleOrSubtitle.length > 0) {
+        results.push(
+          `- [${
+            issue.locale
+          }] repeats title/subtitle: ${issue.repeatedFromTitleOrSubtitle.join(
+            ", "
+          )}`
+        );
+      }
     }
     results.push("");
   }
@@ -285,7 +305,7 @@ export async function handleValidateAso(
     results.push(
       `❌ **Validation failed** - Fix the issues above before pushing to stores.`
     );
-    results.push(`\nReference: ${FIELD_LIMITS_DOC_PATH}`);
+    results.push(`\nReferences: ${ASO_OVERVIEW_DOC_PATH}, ${FIELD_LIMITS_DOC_PATH}`);
   } else if (hasSanitizeWarnings && !fix) {
     results.push(
       `⚠️ **Invalid characters detected** - Run with \`fix: true\` to auto-remove.`
@@ -303,4 +323,3 @@ export async function handleValidateAso(
     ],
   };
 }
-
