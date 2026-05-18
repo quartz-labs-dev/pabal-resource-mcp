@@ -7,9 +7,15 @@ const ASO_RULES_SUMMARY = [
   `Use ${ASO_OVERVIEW_DOC_PATH} for keyword strategy and ${FIELD_LIMITS_DOC_PATH} for hard limits.`,
   'Keyword source priority: product-level manual CSV files in `.aso/keywordResearch/products/[slug]/*.csv` first. Check the target country Store Domain first; if missing, translate/localize US CSV keywords for the target locale. Then use locale saved keyword research alongside the CSV to validate and fill remaining opportunities.',
   'Distribute important terms in this order: title first, subtitle second, keywords third.',
-  '`aso.title`: keep app name + the most relevant high-priority keyword, usually `App Name: Primary Keyword`.',
+  'Assign tracked keywords by relevance and current rank: best keyword that fits 30 chars -> title; next best keyword that fits 30 chars -> subtitle; remaining high-value keywords within 100 chars -> keyword field.',
+  '`aso.title`: keep app name + the most relevant high-priority keyword, usually `App Name: Primary Keyword`; remember `&`, `:`, and `-` count as 2 characters in title limits.',
   '`aso.subtitle`: use important keywords that do not repeat the title.',
-  '`aso.keywords`: comma-separated with commas only, no spaces, no duplicates, no title/subtitle repetition; title, subtitle, and keywords must not share the same keyword terms.',
+  '`aso.keywords`: comma-separated with commas only, no spaces, no duplicates, no title/subtitle repetition; every word can appear in only one of title, subtitle, or keywords.',
+  'Do not split multi-word keywords across fields; keep the full phrase in one field.',
+  'Use singular forms only because Apple indexes plurals automatically.',
+  'Exclude stop words that Apple ignores, such as `a`, `and`, `the`, `for`, `with`, `app`, and `to`.',
+  'Exclude company/app names and inherited category terms, such as the app brand and categories like `Health & Fitness`.',
+  'For US Store keyword suggestions, find suggestions for the app and only add keywords with popularity >25 and difficulty <75.',
   '`aso.keywords`: use as much of the 100-character limit as possible with relevant keywords; do not leave meaningful capacity unused and do not use filler.',
   '`aso.keywords`: split phrase intent into reusable single terms when appropriate, e.g. `sound,relaxing,rain` for "relaxing sound" + "rain sound".',
   '`aso.keywords`: prefer singular forms, allow real searched misspellings, and order by importance.',
@@ -91,7 +97,11 @@ export function generatePrimaryOptimizationPrompt(
 
   prompt += `## Step 2: Optimize All Fields (${primaryLocale})\n\n`;
   prompt += `**Apply keywords strategically based on tier priority:**\n\n`;
-  prompt += `**Ordering rule:** Place the strongest important terms in \`aso.title\` first, then \`aso.subtitle\`, then \`aso.keywords\`. A keyword term used in one of these three fields must not be repeated in either of the other two fields.\n\n`;
+  prompt += `**Assignment rule:** Tag tracked keywords by relevance and current rank: best keyword that fits the 30-character title limit as \`title\`, next best keyword that fits the 30-character subtitle limit as \`subtitle\`, and remaining high-value keywords that fit the 100-character keyword field as \`keyword field\`.\n`;
+  prompt += `**Ordering rule:** Place the strongest important terms on the left in every field. A word used in \`aso.title\`, \`aso.subtitle\`, or \`aso.keywords\` must not appear in either of the other two fields.\n`;
+  prompt += `**Phrase rule:** Do not split multi-word keywords across fields. Keep the complete phrase together in one field.\n`;
+  prompt += `**Cleanup rule:** Use singular forms, remove Apple-ignored stop words (a/and/the/for/with/app/to/etc.), and exclude the company/app name plus inherited category keywords such as "Health & Fitness".\n\n`;
+  prompt += `**US Store suggestion rule:** For US Store keyword suggestions, find suggestions for this app and only add keywords with popularity >25 and difficulty <75.\n\n`;
   prompt += `### Tier 1 Keywords (Core) → Title & Subtitle\n`;
   prompt += `- \`aso.title\` (≤30): **"App Name: [Tier1 Keyword]"** format\n`;
   prompt += `  - App name in English, keyword in target language with natural casing\n`;
@@ -120,7 +130,9 @@ export function generatePrimaryOptimizationPrompt(
   prompt += `## Step 3: Validate (after applying all keywords)\n\n`;
   prompt += `Check all limits using ${FIELD_LIMITS_DOC_PATH}: title ≤30, subtitle ≤30, shortDescription ≤80, keywords ≤100, intro ≤300, outro ≤200\n`;
   prompt += `- Apply ${ASO_OVERVIEW_DOC_PATH}: keyword popularity ≥20 where available, achievable difficulty, relevance, likely user intent, singular forms, important keywords first\n`;
-  prompt += `- Confirm title/subtitle/keywords priority placement: title gets the most important term, subtitle gets the next important non-overlapping terms, keywords gets remaining non-overlapping terms\n`;
+  prompt += `- Confirm title/subtitle/keywords priority placement: title gets the most important fitting keyword, subtitle gets the next important fitting non-overlapping keyword, keywords gets remaining non-overlapping terms\n`;
+  prompt += `- Confirm multi-word keywords are not split across fields and stop words/category/company terms were excluded\n`;
+  prompt += `- For US Store keyword suggestions, confirm every added suggestion has popularity >25 and difficulty <75\n`;
   prompt += `- Maximize keyword field utilization: target 90-100/100 chars when enough relevant keywords exist; explain any lower count\n`;
   prompt += `- Remove keyword duplicates across all metadata fields: no duplicate terms inside keywords and no overlap between title, subtitle, and keywords; no spaces after commas\n`;
   prompt += `- Ensure App Store/Play Store rules from ${FIELD_LIMITS_DOC_PATH} are satisfied (no disallowed characters/formatting)\n\n`;
@@ -135,6 +147,7 @@ export function generatePrimaryOptimizationPrompt(
   prompt += `**1. Keyword Research (from provided sources)**\n`;
   prompt += `   - Cite file(s) used and list the selected top 10 keywords (no new research)\n`;
   prompt += `   - If a Manual Priority Keywords CSV was provided, cite it first, state whether target-country or US fallback rows were used, and explain how those keywords were placed before generated research keywords\n`;
+  prompt += `   - Tag each selected tracked keyword as \`title\`, \`subtitle\`, or \`keyword field\` according to relevance/current rank and field limits\n`;
   prompt += `   - Rationale: why these 10 were chosen from the provided sources\n\n`;
   prompt += `**2. Optimized JSON** (complete ${primaryLocale} locale structure)\n`;
   prompt += `   - MUST include complete \`aso\` object with all fields\n`;
@@ -149,6 +162,7 @@ export function generatePrimaryOptimizationPrompt(
   prompt += `   - subtitle: X/30 ✓/✗\n`;
   prompt += `   - shortDescription: X/80 ✓/✗\n`;
   prompt += `   - keywords: X/100 ✓/✗ (target 90-100 when possible; deduped ✓/✗; no title/subtitle/keywords overlap ✓/✗)\n`;
+  prompt += `   - phrase integrity / singular / stop-word / category-name checks: ✓/✗\n`;
   prompt += `   - intro: X/300 ✓/✗\n`;
   prompt += `   - outro: X/200 ✓/✗\n`;
   prompt += `   - Store rules (${FIELD_LIMITS_DOC_PATH}): ✓/✗\n`;
@@ -289,7 +303,10 @@ export function generateKeywordLocalizationPrompt(
   prompt += `For EACH locale:\n`;
   prompt += `- Source priority: Manual Priority Keywords CSV first (target-country rows, or translated/localized US rows if target-country rows are missing), locale saved keyword research second, translated fallback research third.\n`;
   prompt += `- Even when CSV exists, still review the locale saved keyword research and use it to validate choices and fill remaining relevant capacity.\n`;
-  prompt += `- Metadata placement priority: title first, subtitle second, keywords third; do not repeat the same keyword terms across these three fields.\n`;
+  prompt += `- Metadata placement priority: best fitting keyword by relevance/current rank to title, next best fitting keyword to subtitle, remaining high-value keywords to keyword field.\n`;
+  prompt += `- Do not repeat the same word across title, subtitle, and keywords. Do not split multi-word keywords across fields.\n`;
+  prompt += `- Use singular forms, remove Apple-ignored stop words, and exclude company/app/category names.\n`;
+  prompt += `- For US Store keyword suggestions, find suggestions for this app and only add keywords with popularity >25 and difficulty <75.\n`;
   prompt += `- Priority: Keep iOS-sourced keywords first; add Android keywords only if there is remaining space after iOS keywords fit within field limits.\n`;
   prompt += `1. Take the EXISTING translated content (below) - **DO NOT change the content itself**\n`;
   prompt += `2. Replace \`aso.keywords\` array with optimized keywords (keep same count/structure)\n`;
@@ -301,6 +318,9 @@ export function generateKeywordLocalizationPrompt(
   prompt += `   - **Do NOT translate/rename the app name**; keep the original English app name across all locales.\n`;
   prompt += `   - **Only replace the keyword part** - keep the app name and format structure unchanged\n`;
   prompt += `4. Deduplicate keywords: final \`aso.keywords\` must be unique, comma-only without spaces, as close to 100 chars as possible, and must not repeat any title/subtitle keyword terms\n`;
+  prompt += `   - Do not split multi-word keywords between title/subtitle/keywords; assign the full phrase to a single field\n`;
+  prompt += `   - Use singular forms only; remove stop words such as a/and/the/for/with/app/to; exclude app/company/category names\n`;
+  prompt += `   - For US Store keyword suggestions, only add suggestions with popularity >25 and difficulty <75\n`;
   prompt += `5. **Replace keywords in existing sentences** - swap ONLY the keywords, keep everything else:\n`;
   prompt += `   - **Keep original sentence structure exactly as is**\n`;
   prompt += `   - **Keep original tone and messaging unchanged**\n`;
@@ -346,6 +366,7 @@ export function generateKeywordLocalizationPrompt(
   prompt += `   - **For each field: Replace keywords only, keep existing content structure and meaning unchanged**\n`;
   prompt += `3. **CRITICAL**: Ensure ALL landing fields are translated (not English)\n`;
   prompt += `4. After swapping keywords, validate ASO basics (${ASO_OVERVIEW_DOC_PATH}) + limits/store rules (${FIELD_LIMITS_DOC_PATH}) + keyword utilization (target 90-100/100 when enough relevant keywords exist) + keyword duplication (unique list; no overlap between title/subtitle/keywords; no spaces after commas)\n`;
+  prompt += `   - Also validate no multi-word keyword was split across fields, singular forms are used, stop words are removed, and company/app/category names are excluded\n`;
   prompt += `5. **SAVE the updated JSON to file** using save-locale-file tool\n`;
   prompt += `6. Move to next locale in batch\n\n`;
 
@@ -371,6 +392,7 @@ export function generateKeywordLocalizationPrompt(
   prompt += `   - If Manual Priority Keywords CSV exists: Cite it first; state whether target-country rows or translated US fallback rows were used; list selected CSV keywords and where they were placed\n`;
   prompt += `   - If saved research exists: Cite file(s) used; list selected top 10 keywords (in target language)\n`;
   prompt += `   - If using fallback: List **TRANSLATED** keywords from primary locale (English → target language) with translation rationale\n`;
+  prompt += `   - Tag each selected tracked keyword as \`title\`, \`subtitle\`, or \`keyword field\` according to relevance/current rank and field limits\n`;
   prompt += `   - Show final 10 keywords **IN TARGET LANGUAGE** with tier assignments - DO NOT show English keywords\n\n`;
   prompt += `**2. Updated JSON** (complete locale structure with keyword replacements only)\n`;
   prompt += `   - **CRITICAL**: Keep ALL existing content structure and meaning unchanged - only replace keywords\n`;
@@ -388,6 +410,7 @@ export function generateKeywordLocalizationPrompt(
   prompt += `   - subtitle: X/30 ✓/✗\n`;
   prompt += `   - shortDescription: X/80 ✓/✗\n`;
   prompt += `   - keywords: X/100 ✓/✗ (target 90-100 when possible; deduped ✓/✗; comma-only/no spaces ✓/✗; no title/subtitle/keywords overlap ✓/✗)\n`;
+  prompt += `   - phrase integrity / singular / stop-word / category-name checks: ✓/✗\n`;
   prompt += `   - intro: X/300 ✓/✗\n`;
   prompt += `   - outro: X/200 ✓/✗\n`;
   prompt += `   - Store rules (${FIELD_LIMITS_DOC_PATH}): ✓/✗\n\n`;

@@ -12,6 +12,19 @@ ASO metadata should place important search terms in strict priority order:
 
 Do not repeat the same keyword term across these three fields. If a term is used in the title, do not use it again in the subtitle or `aso.keywords`. If a term is used in the subtitle, do not use it again in `aso.keywords`.
 
+Apply tracked keywords to App Store Connect metadata by relevance and current rank:
+
+- Tag the best keyword that fits within the 30-character title limit as `title`.
+- Tag the next best keyword that fits within the 30-character subtitle limit as `subtitle`.
+- Tag the remaining high-value keywords that fit within the 100-character keyword field as `keyword field`.
+- Put the highest-importance keywords on the left side of every field.
+- Do not split multi-word keywords across fields. Keep a phrase in one field instead of placing one word in the title and another word in the subtitle.
+- Use singular forms only. Apple automatically indexes plural forms.
+- Exclude stop words that Apple ignores, such as `a`, `and`, `the`, `for`, `with`, `app`, and `to`.
+- Exclude company/app names and inherited category names, such as `InnerGrow` or `Health & Fitness`.
+- Remember that `&`, `:`, and `-` count as 2 characters in the title field.
+- Format `aso.keywords` with commas only and no spaces.
+
 ### App Name
 
 The app name should combine the app brand with the most relevant core keyword.
@@ -60,11 +73,13 @@ book,tracker
 
 Before choosing a keyword, check the following:
 
-1. Is this keyword's popularity score at least 20?
-2. Is this keyword's difficulty within a range your app can compete for?
+1. For US Store keyword suggestions, is this keyword's popularity score higher than 25?
+2. For US Store keyword suggestions, is this keyword's difficulty lower than 75?
 3. Are there apps in the top 10 for this keyword that your app can realistically compete with?
 4. Is this keyword truly relevant to your app?
 5. Would your target users use this keyword to find your app?
+
+Only add US Store keyword suggestions that pass both thresholds: popularity >25 and difficulty <75.
 
 ## Application Order
 
