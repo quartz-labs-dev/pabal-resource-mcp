@@ -10,6 +10,11 @@ import type { LandingPage } from "./landingPage.types.js";
  * Screenshot metadata
  */
 export interface ProductScreenshots {
+  /**
+   * When true, the first screenshot is a marketing cover.
+   * Detail pages may use it in the hero while excluding it from feature galleries.
+   */
+  hasCover?: boolean;
   phone?: string[];
   tablet?: string[];
 }
