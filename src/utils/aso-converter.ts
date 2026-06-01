@@ -324,8 +324,8 @@ export function loadAsoFromConfig(slug: string): AsoData {
           screenshots: {
             // Map phone screenshots to iphone65
             iphone65: localeScreenshots.phone || [],
-            // Map tablet screenshots to ipadPro129
-            ipadPro129: localeScreenshots.tablet,
+            // Map tablet screenshots to iPad 13"
+            ipad13: localeScreenshots.tablet,
           },
         };
       }

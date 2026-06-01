@@ -157,7 +157,8 @@ export interface AppStoreScreenshots
   iphone55?: string[]; // APP_IPHONE_55
   iphone47?: string[]; // APP_IPHONE_47
   iphone40?: string[]; // APP_IPHONE_40
-  ipadPro129?: string[]; // APP_IPAD_PRO_129
+  ipad13?: string[]; // APP_IPAD_PRO_3GEN_129
+  ipadPro129?: string[]; // Legacy alias for APP_IPAD_PRO_3GEN_129
   ipadPro11?: string[]; // APP_IPAD_PRO_3GEN_11
   ipad105?: string[]; // APP_IPAD_105
   ipad97?: string[]; // APP_IPAD_97

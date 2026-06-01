@@ -100,7 +100,7 @@ Resizes translated screenshots to App Store dimensions.
 | Device | Width | Height | Ratio          |
 | ------ | ----- | ------ | -------------- |
 | Phone  | 1242  | 2688   | 6.5" iPhone    |
-| Tablet | 2048  | 2732   | 12.9" iPad Pro |
+| Tablet | 2048  | 2732   | 13" iPad |
 
 ### Input Parameters
 

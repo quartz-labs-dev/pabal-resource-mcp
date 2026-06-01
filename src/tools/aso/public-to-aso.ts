@@ -259,21 +259,21 @@ async function downloadScreenshotsToAsoDir(
         "iphone65"
       );
 
-      const ipadPro129Paths = await downloadScreenshotArray(
-        localeData.screenshots?.ipadPro129,
+      const ipad13Paths = await downloadScreenshotArray(
+        localeData.screenshots?.ipad13 ?? localeData.screenshots?.ipadPro129,
         asoDir,
         relativeDir,
-        "ipadPro129"
+        "ipad13"
       );
 
       // Update localeData with relative paths (only for files that actually exist)
       const hasDownloadedScreenshots =
-        iphone65Paths.length > 0 || ipadPro129Paths.length > 0;
+        iphone65Paths.length > 0 || ipad13Paths.length > 0;
 
       if (hasDownloadedScreenshots) {
         localeData.screenshots = {
           iphone65: iphone65Paths,
-          ipadPro129: ipadPro129Paths,
+          ipad13: ipad13Paths,
         };
       }
     }
