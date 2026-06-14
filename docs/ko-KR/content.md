@@ -19,6 +19,7 @@
 - `title` (선택): 슬러그 생성용 영어 제목
 - `locales` (선택): 다중 로케일 동시 생성
 - `coverImage` (선택): 상대 경로는 `/blogs/<app>/<slug>/...`로 재작성
+- `status` (선택): 생략하면 발행으로 처리. `draft`면 웹 라우트와 목록에서 제외
 - `publishedAt`, `modifiedAt` (선택): `YYYY-MM-DD`
 - `overwrite` (선택): 기존 파일 덮어쓰기 여부
 

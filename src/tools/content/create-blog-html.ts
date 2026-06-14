@@ -95,6 +95,12 @@ export const createBlogHtmlInputSchema = z
       .describe(
         "Optional tags for BLOG_META. Defaults to tags derived from topic."
       ),
+    status: z
+      .enum(["published", "draft"])
+      .optional()
+      .describe(
+        "Publication status. Omit for published. Set to 'draft' only when the user explicitly asks for a draft."
+      ),
     coverImage: z
       .string()
       .trim()
@@ -159,6 +165,7 @@ Slug rules:
 - path: public/blogs/<appSlug>/<slug>/<locale>.html
 - appSlug: Use "${DEVELOPER_JOURNAL_APP_SLUG}" for personal/journal posts, "${DEVELOPER_TECH_APP_SLUG}" for technical posts. Defaults to "${DEFAULT_APP_SLUG}" if not specified.
 - coverImage default: /products/<appSlug>/og-image.png (relative paths are rewritten under /blogs/<app>/<slug>/, developer slugs default to /og-image.png)
+- status defaults to published when omitted. Set status="draft" only when the user explicitly asks for a draft.
 - overwrite defaults to false (throws when file exists)
 
 HTML Structure (follows public/en-US.html pattern):
@@ -184,6 +191,7 @@ export async function handleCreateBlogHtml(
     title,
     description,
     tags,
+    status,
     coverImage,
     publishedAt,
     modifiedAt,
@@ -275,6 +283,7 @@ export async function handleCreateBlogHtml(
       slug,
       locale,
       topic,
+      status,
       coverImage,
       tags,
       publishedAt,

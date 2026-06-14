@@ -101,6 +101,7 @@ export function buildBlogMeta(options: {
   slug: string;
   locale: string;
   topic: string;
+  status?: "published" | "draft";
   coverImage?: string;
   tags?: string[];
   publishedAt?: string;
@@ -127,6 +128,7 @@ export function buildBlogMeta(options: {
     appSlug: options.appSlug,
     slug: options.slug,
     locale: options.locale,
+    ...(options.status === "draft" ? { status: "draft" } : {}),
     publishedAt,
     modifiedAt,
     coverImage,
@@ -263,7 +265,7 @@ export function findExistingBlogPosts({
       const htmlContent = fs.readFileSync(localeFile, "utf-8");
       const { meta, body } = parseBlogHtml(htmlContent);
 
-      if (meta && meta.locale === locale) {
+      if (meta && meta.locale === locale && meta.status !== "draft") {
         posts.push({
           filePath: localeFile,
           meta,

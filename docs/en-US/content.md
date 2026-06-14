@@ -19,6 +19,7 @@ Generate static HTML blog posts with `BLOG_META` blocks.
 - `title` (optional): English title used for slug generation.
 - `locales` (optional): Generate multiple locales at once.
 - `coverImage` (optional): Relative paths are rewritten under `/blogs/<app>/<slug>/...`.
+- `status` (optional): Omit for published. Use `draft` to keep the post out of web routes and listings.
 - `publishedAt`, `modifiedAt` (optional): `YYYY-MM-DD`.
 - `overwrite` (optional): Overwrite existing files.
 

@@ -13,6 +13,7 @@ export interface BlogMetaOutput {
   appSlug: string;
   slug: string;
   locale: string;
+  status?: "published" | "draft";
   publishedAt: string;
   modifiedAt: string;
   coverImage: string;
@@ -54,6 +55,10 @@ export interface CreateBlogHtmlInput {
    * Optional tags for BLOG_META. If absent, tags are derived from topic and appSlug.
    */
   tags?: string[];
+  /**
+   * Publication status. Missing status is treated as published.
+   */
+  status?: "published" | "draft";
   /**
    * Optional cover image. Relative paths are rewritten to /blogs/<app>/<slug>/...
    */

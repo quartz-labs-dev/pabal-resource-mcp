@@ -15,6 +15,7 @@ export interface BlogMetaBlock {
   appSlug: string;
   slug: string;
   locale?: string;
+  status?: "published" | "draft";
   coverImage?: string;
   publishedAt?: string;
   modifiedAt?: string;
@@ -58,7 +59,6 @@ export interface BlogSummary {
   locales: UnifiedLocale[];
   defaultLocale: UnifiedLocale;
 }
-
 
 
 
