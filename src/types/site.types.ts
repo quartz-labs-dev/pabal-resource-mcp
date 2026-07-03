@@ -48,6 +48,7 @@ export interface SiteData {
     name: string;
     heading: string;
     role: string;
+    profileImageSrc?: string;
     bio: string;
     principles: string[];
     stack: string[];
@@ -66,7 +67,6 @@ export interface SiteData {
     };
   };
 }
-
 
 
 
