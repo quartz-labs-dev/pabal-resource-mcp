@@ -41,20 +41,21 @@ export interface SiteData {
   hero: {
     brand: string;
     tagline: string;
-    subtitle: string;
   };
   contacts: { id: string; label: string; icon: string; value: string }[];
   developer: {
     name: string;
-    heading: string;
     role: string;
     profileImageSrc?: string;
+    featuredBlogs?: string[];
+    about?: {
+      heroTitle: string;
+      heroDescription: string;
+      productsCta: string;
+      storySentences: string[];
+    };
     bio: string;
-    principles: string[];
-    stack: string[];
-    now: string;
     availability: string;
-    likes: string[];
     location?: string;
     timezone?: string;
     visited: {
