@@ -22,6 +22,7 @@ import {
 } from "../types/aso/index.js";
 import { DEFAULT_LOCALE } from "../constants/unified-locales.js";
 import { getPushDataDir, getProductsDir } from "./config.util.js";
+import { resolveProductLocaleForPlatform } from "./product-locale-platform.util.js";
 import type {
   AsoLocaleContent,
   ProductConfig,
@@ -91,6 +92,52 @@ function generateFullDescription(
   }
 
   return parts.join("\n");
+}
+
+const SCREENSHOT_FILE_PATTERN = /\.(png|jpe?g|webp)$/i;
+
+const compareScreenshotFileNames = (a: string, b: string): number => {
+  const numberA = Number.parseInt(a.match(/\d+/)?.[0] ?? "0", 10);
+  const numberB = Number.parseInt(b.match(/\d+/)?.[0] ?? "0", 10);
+
+  return numberA === numberB ? a.localeCompare(b) : numberA - numberB;
+};
+
+/**
+ * A product that renders one screenshot set per store writes the non-default
+ * set to `screenshots/{locale}/{platform}/{device}/`. That set can hold a
+ * different number of images than the shared one, so the directory is listed
+ * instead of remapping the hand-maintained config paths.
+ */
+function listPlatformScreenshotPaths(
+  slug: string,
+  locale: string,
+  device: "phone" | "tablet",
+  platformDir: string
+): string[] | undefined {
+  const productsDir = getProductsDir();
+  const deviceDir = path.join(
+    productsDir,
+    slug,
+    "screenshots",
+    locale,
+    platformDir,
+    device
+  );
+
+  if (!fs.existsSync(deviceDir)) return undefined;
+
+  const fileNames = fs
+    .readdirSync(deviceDir)
+    .filter((fileName) => SCREENSHOT_FILE_PATTERN.test(fileName))
+    .sort(compareScreenshotFileNames);
+
+  if (fileNames.length === 0) return undefined;
+
+  return fileNames.map(
+    (fileName) =>
+      `/products/${slug}/screenshots/${locale}/${platformDir}/${device}/${fileName}`
+  );
 }
 
 /**
@@ -163,7 +210,7 @@ export function loadAsoFromConfig(slug: string): AsoData {
       const metadata: ProductMetadata = config.metadata || {};
       const screenshots: ProductScreenshots = metadata.screenshots || {};
 
-      for (const [locale, localeData] of Object.entries(locales)) {
+      for (const [locale, rawLocaleData] of Object.entries(locales)) {
         // First check if locale is a valid unified locale
         if (!isSupportedLocale(locale)) {
           console.debug(
@@ -178,6 +225,10 @@ export function loadAsoFromConfig(slug: string): AsoData {
           );
           continue;
         }
+        const localeData = resolveProductLocaleForPlatform(
+          rawLocaleData,
+          "android"
+        );
         const aso: AsoLocaleContent = localeData.aso || {};
 
         // Debug: Check if ASO data exists
@@ -204,18 +255,36 @@ export function loadAsoFromConfig(slug: string): AsoData {
         const hasTabletScreenshots = fs.existsSync(tabletDir);
         const hasFeatureGraphic = fs.existsSync(featureGraphicPath);
 
+        // An Android-only screenshot set wins over the shared one.
+        const androidPhonePaths = listPlatformScreenshotPaths(
+          slug,
+          locale,
+          "phone",
+          "android"
+        );
+        const androidTabletPaths = listPlatformScreenshotPaths(
+          slug,
+          locale,
+          "tablet",
+          "android"
+        );
+
         // Add locale to screenshot paths only if the specific type directory exists
         const localeScreenshots: typeof screenshots = {
-          phone: hasPhoneScreenshots
-            ? screenshots.phone?.map((p) =>
-                p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
-              )
-            : undefined,
-          tablet: hasTabletScreenshots
-            ? screenshots.tablet?.map((p) =>
-                p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
-              )
-            : undefined,
+          phone:
+            androidPhonePaths ??
+            (hasPhoneScreenshots
+              ? screenshots.phone?.map((p) =>
+                  p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
+                )
+              : undefined),
+          tablet:
+            androidTabletPaths ??
+            (hasTabletScreenshots
+              ? screenshots.tablet?.map((p) =>
+                  p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
+                )
+              : undefined),
         };
 
         googlePlayLocales[locale] = {
@@ -261,7 +330,7 @@ export function loadAsoFromConfig(slug: string): AsoData {
       const metadata: ProductMetadata = config.metadata || {};
       const screenshots: ProductScreenshots = metadata.screenshots || {};
 
-      for (const [locale, localeData] of Object.entries(locales)) {
+      for (const [locale, rawLocaleData] of Object.entries(locales)) {
         // First check if locale is a valid unified locale
         if (!isSupportedLocale(locale)) {
           console.debug(
@@ -276,6 +345,10 @@ export function loadAsoFromConfig(slug: string): AsoData {
           );
           continue;
         }
+        const localeData = resolveProductLocaleForPlatform(
+          rawLocaleData,
+          "ios"
+        );
         const aso: AsoLocaleContent = localeData.aso || {};
 
         // Debug: Check if ASO data exists

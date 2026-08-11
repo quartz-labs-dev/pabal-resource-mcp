@@ -100,3 +100,54 @@ When improving public product metadata, apply keyword sources in this order:
 Manual CSV keywords are human-curated priority input. First use rows where the CSV `Store Domain` matches the target locale's country. If the CSV has no rows for that country, use the `us` rows as source keywords and translate/localize them for the target locale.
 
 Even when manual CSV keywords exist, review the locale-specific saved keyword research alongside them. Use saved research to validate relevance, avoid weak translations, and fill remaining title, subtitle, and keyword-field capacity without creating duplicates.
+
+## Per-Platform Copy
+
+`public/products/[slug]/locales/[locale].json` holds one shared copy in `aso`
+and `landing`. Both stores read that copy, so most products need nothing else.
+
+When a store needs different wording — an iOS-only capability such as Apple
+Watch, or a Google Play field with a different limit — add a `platforms` block
+to the same locale file:
+
+```json
+{
+  "aso": { "title": "...", "shortDescription": "..." },
+  "landing": { "screenshots": { "images": [] } },
+  "platforms": {
+    "android": {
+      "aso": { "shortDescription": "..." },
+      "landing": {
+        "screenshots": {
+          "images": [null, { "title": "...", "description": "..." }, null]
+        }
+      }
+    }
+  }
+}
+```
+
+Resolution rules:
+
+- App Store data is the shared copy merged with `platforms.ios`.
+- Google Play data is the shared copy merged with `platforms.android`.
+- Product detail pages render the App Store result, so the shared copy should
+  read as the iOS version and `platforms.android` should carry the deviation.
+- Object fields merge key by key.
+- `screenshots.images` and `features.items` merge by index: `null` keeps the
+  shared entry, and the override's length wins so a platform can drop trailing
+  entries.
+- `landing.screenshots.images` is index-matched against that platform's
+  screenshot files, so its order must match the platform's screenshot order.
+
+`fullDescription` and `description` are generated from `landing`, so a
+platform override to `landing.screenshots.images` also changes that store's
+generated description body.
+
+## Per-Platform Screenshots
+
+A product that renders one screenshot set per store writes the non-default set
+to `public/products/[slug]/screenshots/[locale]/android/{phone,tablet}/`.
+Google Play uses that directory when it exists and falls back to the shared
+`[locale]/{phone,tablet}/` set when it does not. The App Store always reads the
+shared set.
