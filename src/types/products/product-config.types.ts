@@ -17,6 +17,10 @@ export interface ProductScreenshots {
   hasCover?: boolean;
   phone?: string[];
   tablet?: string[];
+  /** App Store-only Apple Watch screenshots. */
+  watch?: string[];
+  /** Google Play-only Wear OS screenshots. */
+  wearOs?: string[];
 }
 
 /**

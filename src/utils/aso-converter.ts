@@ -104,25 +104,23 @@ const compareScreenshotFileNames = (a: string, b: string): number => {
 };
 
 /**
- * A product that renders one screenshot set per store writes the non-default
- * set to `screenshots/{locale}/{platform}/{device}/`. That set can hold a
- * different number of images than the shared one, so the directory is listed
- * instead of remapping the hand-maintained config paths.
+ * Lists a screenshot directory instead of remapping the hand-maintained config
+ * paths, because such a set can hold a different number of images than the
+ * shared one. `segments` is the path under `screenshots/{locale}/`: a
+ * per-store render is `{platform}/{device}`, a device of its own is `{device}`.
  */
-function listPlatformScreenshotPaths(
+function listScreenshotDirPaths(
+  productsDir: string,
   slug: string,
   locale: string,
-  device: "phone" | "tablet",
-  platformDir: string
+  segments: string[]
 ): string[] | undefined {
-  const productsDir = getProductsDir();
   const deviceDir = path.join(
     productsDir,
     slug,
     "screenshots",
     locale,
-    platformDir,
-    device
+    ...segments
   );
 
   if (!fs.existsSync(deviceDir)) return undefined;
@@ -134,9 +132,11 @@ function listPlatformScreenshotPaths(
 
   if (fileNames.length === 0) return undefined;
 
+  const dirPath = segments.join("/");
+
   return fileNames.map(
     (fileName) =>
-      `/products/${slug}/screenshots/${locale}/${platformDir}/${device}/${fileName}`
+      `/products/${slug}/screenshots/${locale}/${dirPath}/${fileName}`
   );
 }
 
@@ -144,8 +144,10 @@ function listPlatformScreenshotPaths(
  * Read ASO data from config.json.
  * New structure: config.json (metadata) + locales/{locale}.json (content)
  */
-export function loadAsoFromConfig(slug: string): AsoData {
-  const productsDir = getProductsDir();
+export function loadAsoFromConfig(
+  slug: string,
+  productsDir: string = getProductsDir()
+): AsoData {
   const configPath = path.join(productsDir, slug, "config.json");
 
   // Debug: Log paths for troubleshooting
@@ -256,18 +258,23 @@ export function loadAsoFromConfig(slug: string): AsoData {
         const hasFeatureGraphic = fs.existsSync(featureGraphicPath);
 
         // An Android-only screenshot set wins over the shared one.
-        const androidPhonePaths = listPlatformScreenshotPaths(
+        const androidPhonePaths = listScreenshotDirPaths(
+          productsDir,
           slug,
           locale,
-          "phone",
-          "android"
+          ["android", "phone"]
         );
-        const androidTabletPaths = listPlatformScreenshotPaths(
+        const androidTabletPaths = listScreenshotDirPaths(
+          productsDir,
           slug,
           locale,
-          "tablet",
-          "android"
+          ["android", "tablet"]
         );
+        // Wear OS is its own device, Google Play-only, and never shares the
+        // Apple Watch set in `watch`.
+        const wearOsPaths = listScreenshotDirPaths(productsDir, slug, locale, [
+          "wear-os",
+        ]);
 
         // Add locale to screenshot paths only if the specific type directory exists
         const localeScreenshots: typeof screenshots = {
@@ -285,6 +292,9 @@ export function loadAsoFromConfig(slug: string): AsoData {
                   p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
                 )
               : undefined),
+          // Listed from disk only: the Apple Watch set must never stand in for
+          // a missing Wear OS set, so there is no shared-set fallback here.
+          wearOs: wearOsPaths,
         };
 
         googlePlayLocales[locale] = {
@@ -296,6 +306,11 @@ export function loadAsoFromConfig(slug: string): AsoData {
           screenshots: {
             phone: localeScreenshots.phone || [],
             tablet: localeScreenshots.tablet,
+            // Wear OS screenshots are Google Play-only, and stay absent rather
+            // than empty for products without a watch app.
+            ...(localeScreenshots.wearOs?.length
+              ? { wear: localeScreenshots.wearOs }
+              : {}),
           },
           featureGraphic: hasFeatureGraphic
             ? `/products/${slug}/screenshots/${locale}/feature-graphic.png`
@@ -367,8 +382,10 @@ export function loadAsoFromConfig(slug: string): AsoData {
         );
         const phoneDir = path.join(screenshotsDir, "phone");
         const tabletDir = path.join(screenshotsDir, "tablet");
+        const watchDir = path.join(screenshotsDir, "watch");
         const hasPhoneScreenshots = fs.existsSync(phoneDir);
         const hasTabletScreenshots = fs.existsSync(tabletDir);
+        const hasWatchScreenshots = fs.existsSync(watchDir);
 
         // Add locale to screenshot paths only if the specific type directory exists
         const localeScreenshots: typeof screenshots = {
@@ -379,6 +396,11 @@ export function loadAsoFromConfig(slug: string): AsoData {
             : undefined,
           tablet: hasTabletScreenshots
             ? screenshots.tablet?.map((p) =>
+                p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
+              )
+            : undefined,
+          watch: hasWatchScreenshots
+            ? screenshots.watch?.map((p) =>
                 p.replace(/\/screenshots\/[^/]+\//, `/screenshots/${locale}/`)
               )
             : undefined,
@@ -399,6 +421,8 @@ export function loadAsoFromConfig(slug: string): AsoData {
             iphone65: localeScreenshots.phone || [],
             // Map tablet screenshots to iPad 13"
             ipad13: localeScreenshots.tablet,
+            // Apple Watch screenshots are App Store-only.
+            appleWatch: localeScreenshots.watch,
           },
         };
       }

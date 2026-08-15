@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import path from "node:path";
+import sharp from "sharp";
 import { loadAsoFromConfig } from "../../utils/aso-converter.js";
 import {
   ASO_OVERVIEW_DOC_PATH,
@@ -74,7 +75,8 @@ const inputSchema = jsonSchema.definitions?.PublicToAsoInput || jsonSchema;
 async function downloadAndVerifyScreenshot(
   url: string,
   outputPath: string,
-  relativePath: string
+  relativePath: string,
+  optimizeLargePng: boolean = false
 ): Promise<string | null> {
   try {
     if (isLocalAssetPath(url)) {
@@ -82,6 +84,10 @@ async function downloadAndVerifyScreenshot(
     } else {
       await downloadImage(url, outputPath);
     }
+    if (optimizeLargePng) {
+      await optimizePngForStoreUpload(outputPath);
+    }
+
     // Verify file exists after download
     if (fs.existsSync(outputPath)) {
       return relativePath;
@@ -93,6 +99,52 @@ async function downloadAndVerifyScreenshot(
   }
 }
 
+const APP_STORE_PNG_COMPRESSION_THRESHOLD_BYTES = 5_000_000;
+
+export async function optimizePngForStoreUpload(
+  filePath: string,
+  maxBytes: number = APP_STORE_PNG_COMPRESSION_THRESHOLD_BYTES
+): Promise<boolean> {
+  if (path.extname(filePath).toLowerCase() !== ".png") return false;
+  if (!fs.existsSync(filePath) || fs.statSync(filePath).size <= maxBytes) {
+    return false;
+  }
+
+  const optimizedPath = `${filePath}.optimized`;
+
+  try {
+    const { data, info } = await sharp(filePath).raw().toBuffer({
+      resolveWithObject: true,
+    });
+
+    await sharp(data, {
+      raw: {
+        width: info.width,
+        height: info.height,
+        channels: info.channels,
+      },
+    })
+      .png({
+        compressionLevel: 9,
+        effort: 6,
+        adaptiveFiltering: true,
+        palette: false,
+      })
+      .toFile(optimizedPath);
+
+    if (fs.statSync(optimizedPath).size >= fs.statSync(filePath).size) {
+      fs.unlinkSync(optimizedPath);
+      return false;
+    }
+
+    fs.renameSync(optimizedPath, filePath);
+    return true;
+  } catch (error) {
+    if (fs.existsSync(optimizedPath)) fs.unlinkSync(optimizedPath);
+    throw error;
+  }
+}
+
 /**
  * Download/copy screenshot array and return relative paths for successfully downloaded files
  */
@@ -100,7 +152,8 @@ async function downloadScreenshotArray(
   screenshots: string[] | undefined,
   asoDir: string,
   relativeDir: string,
-  prefix: string
+  prefix: string,
+  optimizeLargePng: boolean = false
 ): Promise<string[]> {
   if (!screenshots || screenshots.length === 0) {
     return [];
@@ -116,7 +169,8 @@ async function downloadScreenshotArray(
     const result = await downloadAndVerifyScreenshot(
       url,
       outputPath,
-      relativePath
+      relativePath,
+      optimizeLargePng
     );
     if (result) {
       relativePaths.push(result);
@@ -188,6 +242,15 @@ async function downloadScreenshotsToAsoDir(
         "tablet10"
       );
 
+      // Wear OS is staged for a manual Play Console upload: the push pipeline
+      // has no wearScreenshots support, so these files are prepared only.
+      const wearPaths = await downloadScreenshotArray(
+        localeData.screenshots?.wear,
+        asoDir,
+        relativeDir,
+        "wear"
+      );
+
       // Download Feature Graphic and verify
       let featureGraphicPath: string | undefined;
       if (localeData.featureGraphic) {
@@ -207,7 +270,8 @@ async function downloadScreenshotsToAsoDir(
       const hasDownloadedScreenshots =
         phonePaths.length > 0 ||
         tablet7Paths.length > 0 ||
-        tabletPaths.length > 0;
+        tabletPaths.length > 0 ||
+        wearPaths.length > 0;
 
       if (hasDownloadedScreenshots || featureGraphicPath) {
         localeData.screenshots = {
@@ -215,6 +279,7 @@ async function downloadScreenshotsToAsoDir(
           tablet: tabletPaths,
           tablet7: tablet7Paths,
           tablet10: tabletPaths,
+          ...(wearPaths.length > 0 ? { wear: wearPaths } : {}),
         };
         if (featureGraphicPath) {
           localeData.featureGraphic = featureGraphicPath;
@@ -256,24 +321,37 @@ async function downloadScreenshotsToAsoDir(
         localeData.screenshots?.iphone65,
         asoDir,
         relativeDir,
-        "iphone65"
+        "iphone65",
+        true
       );
 
       const ipad13Paths = await downloadScreenshotArray(
         localeData.screenshots?.ipad13 ?? localeData.screenshots?.ipadPro129,
         asoDir,
         relativeDir,
-        "ipad13"
+        "ipad13",
+        true
+      );
+
+      const appleWatchPaths = await downloadScreenshotArray(
+        localeData.screenshots?.appleWatch,
+        asoDir,
+        relativeDir,
+        "appleWatch",
+        true
       );
 
       // Update localeData with relative paths (only for files that actually exist)
       const hasDownloadedScreenshots =
-        iphone65Paths.length > 0 || ipad13Paths.length > 0;
+        iphone65Paths.length > 0 ||
+        ipad13Paths.length > 0 ||
+        appleWatchPaths.length > 0;
 
       if (hasDownloadedScreenshots) {
         localeData.screenshots = {
           iphone65: iphone65Paths,
           ipad13: ipad13Paths,
+          appleWatch: appleWatchPaths,
         };
       }
     }
