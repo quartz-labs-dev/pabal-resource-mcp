@@ -163,6 +163,21 @@ export interface AppStoreScreenshots
   ipad105?: string[]; // APP_IPAD_105
   ipad97?: string[]; // APP_IPAD_97
   appleWatch?: string[]; // APP_WATCH_SERIES_7 (alias)
+  mac?: string[]; // APP_DESKTOP (macOS version only)
+}
+
+/**
+ * The macOS version of a universal App Store app, per locale. Name and
+ * subtitle are shared app info and stay on the parent; everything here lives
+ * on the macOS App Store version. A field that is absent is left untouched on
+ * the store, so an app without Mac copy never has its iPhone copy copied over.
+ */
+export interface AppStoreMacAsoData {
+  description?: AppStoreVersionLocalization["description"];
+  keywords?: AppStoreVersionLocalization["keywords"];
+  promotionalText?: AppStoreVersionLocalization["promotionalText"];
+  whatsNew?: AppStoreVersionLocalization["whatsNew"];
+  screenshots?: Pick<AppStoreScreenshots, "mac">;
 }
 
 /**
@@ -195,6 +210,9 @@ export interface AppStoreAsoData {
   bundleId: string; // Bundle ID (e.g., com.quartz.pixeltimer)
   locale: NonNullable<AppStoreVersionLocalization["locale"]>; // Locale (e.g., en-US)
   whatsNew?: AppStoreVersionLocalization["whatsNew"]; // Release notes (latest version)
+
+  /** macOS version copy and screenshots; absent for iOS-only apps. */
+  macOS?: AppStoreMacAsoData;
 }
 
 /**

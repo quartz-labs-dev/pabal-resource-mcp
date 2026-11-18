@@ -149,5 +149,41 @@ generated description body.
 A product that renders one screenshot set per store writes the non-default set
 to `public/products/[slug]/screenshots/[locale]/android/{phone,tablet}/`.
 Google Play uses that directory when it exists and falls back to the shared
-`[locale]/{phone,tablet}/` set when it does not. The App Store always reads the
-shared set.
+`[locale]/{phone,tablet}/` set when it does not. The App Store's iPhone and iPad
+sets always come from the shared set.
+
+Devices with a store of their own are listed straight from their directory, per
+locale, with no fallback to another locale:
+
+| Directory                | Store                | Pushed as                      |
+| ------------------------ | -------------------- | ------------------------------ |
+| `[locale]/watch/`        | App Store (iOS)      | `appleWatch`                   |
+| `[locale]/mac/`          | App Store (macOS)    | `macOS.screenshots.mac`        |
+| `[locale]/wear-os/`      | Google Play          | `wear` (`wearScreenshots`)     |
+
+A locale without the directory gets no key, so push leaves that locale's store
+set untouched. Only locales that were actually rendered are uploaded.
+
+## Mac App Store Copy
+
+A universal app's macOS version has its own description, keywords, promotional
+text and release notes; name and subtitle are shared app info. Write the Mac
+copy in `platforms.macos` of the locale file:
+
+```json
+{
+  "platforms": {
+    "macos": {
+      "description": "Full Mac description, used verbatim.",
+      "keywords": ["timeblock", "menubar"],
+      "promotionalText": "..."
+    }
+  }
+}
+```
+
+`platforms.macos` is not merged with the shared copy, and nothing falls back to
+the iPhone copy: a field left out is not pushed to the macOS version. App Store
+push data carries it, with the rendered `[locale]/mac/` set, as the locale's
+`macOS` block. The same App Store limits apply (`<locale> (macOS)` in
+validation output).

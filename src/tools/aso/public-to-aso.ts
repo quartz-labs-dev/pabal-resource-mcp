@@ -22,7 +22,7 @@ import {
   isGooglePlayLocale,
   isAppStoreLocale,
 } from "../../types/aso/index.js";
-import type { AsoData } from "../../types/aso/index.js";
+import type { AppStoreMacAsoData, AsoData } from "../../types/aso/index.js";
 import {
   DEFAULT_LOCALE,
   type UnifiedLocale,
@@ -178,6 +178,23 @@ async function downloadScreenshotArray(
   }
   return relativePaths;
 }
+
+/**
+ * Points a locale's Mac block at the staged copies. When none could be staged
+ * the screenshot key is dropped (so push leaves the store's Mac set alone),
+ * and a block left with nothing in it is dropped too.
+ */
+export const withStagedMacScreenshots = (
+  macOS: AppStoreMacAsoData,
+  stagedPaths: string[]
+): AppStoreMacAsoData | undefined => {
+  const { screenshots: _sourceScreenshots, ...macText } = macOS;
+  const staged: AppStoreMacAsoData =
+    stagedPaths.length > 0
+      ? { ...macText, screenshots: { mac: stagedPaths } }
+      : macText;
+  return Object.keys(staged).length > 0 ? staged : undefined;
+};
 
 /**
  * Download/copy screenshots to pushData directory and update asoData with relative paths
@@ -353,6 +370,25 @@ async function downloadScreenshotsToAsoDir(
           ipad13: ipad13Paths,
           appleWatch: appleWatchPaths,
         };
+      }
+
+      // Mac screenshots belong to the macOS version, so they stay inside the
+      // locale's `macOS` block. A locale without a rendered Mac set keeps no
+      // key, which leaves that locale's Mac screenshots untouched on push.
+      if (localeData.macOS?.screenshots?.mac) {
+        const macPaths = await downloadScreenshotArray(
+          localeData.macOS.screenshots.mac,
+          asoDir,
+          relativeDir,
+          "mac",
+          true
+        );
+        const macOS = withStagedMacScreenshots(localeData.macOS, macPaths);
+        if (macOS) {
+          localeData.macOS = macOS;
+        } else {
+          delete localeData.macOS;
+        }
       }
     }
 

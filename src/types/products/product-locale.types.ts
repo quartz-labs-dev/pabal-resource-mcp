@@ -59,14 +59,28 @@ export interface ProductLocalePlatformOverride {
   landing?: ProductLocalePlatformLandingOverride;
 }
 
+/**
+ * Mac App Store copy for one locale. A universal app's macOS version keeps its
+ * own description, keywords and promotional text (name and subtitle are shared
+ * app info), so these are written for the Mac and never inherit the iPhone
+ * copy: a field left out is not pushed to the Mac version at all.
+ */
+export interface ProductLocaleMacListing {
+  /** Full store description, used verbatim (no template). */
+  description?: string;
+  keywords?: string[] | string;
+  promotionalText?: string;
+}
+
 export interface ProductLocale {
   aso?: AsoLocaleContent;
   landing?: LandingPageLocale;
   /**
    * Per-store overrides. The App Store reads `ios`, Google Play reads
-   * `android`, and product detail pages render the `ios` result.
+   * `android`, and product detail pages render the `ios` result. `macos`
+   * holds the Mac App Store copy and is not merged with the shared copy.
    */
   platforms?: Partial<
     Record<ProductLocalePlatform, ProductLocalePlatformOverride>
-  >;
+  > & { macos?: ProductLocaleMacListing };
 }

@@ -5,7 +5,10 @@ import os from "node:os";
 import path from "node:path";
 import sharp from "sharp";
 
-import { optimizePngForStoreUpload } from "../../../../src/tools/aso/public-to-aso.js";
+import {
+  optimizePngForStoreUpload,
+  withStagedMacScreenshots,
+} from "../../../../src/tools/aso/public-to-aso.js";
 
 describe("optimizePngForStoreUpload", () => {
   it("losslessly recompresses a PNG above the App Store upload threshold", async () => {
@@ -40,5 +43,37 @@ describe("optimizePngForStoreUpload", () => {
     assert.equal(metadata.height, 1600);
     assert.equal(metadata.hasAlpha, false);
     assert.equal(metadata.isPalette, false);
+  });
+});
+
+describe("withStagedMacScreenshots", () => {
+  it("points the Mac block at the staged files and keeps the Mac copy", () => {
+    assert.deepEqual(
+      withStagedMacScreenshots(
+        {
+          description: "Mac description",
+          screenshots: { mac: ["/products/example/screenshots/en-US/mac/1.png"] },
+        },
+        ["app-store/screenshots/en-US/mac-1.png"]
+      ),
+      {
+        description: "Mac description",
+        screenshots: { mac: ["app-store/screenshots/en-US/mac-1.png"] },
+      }
+    );
+  });
+
+  it("drops the screenshot key when nothing was staged, and an empty block", () => {
+    assert.deepEqual(
+      withStagedMacScreenshots(
+        { keywords: "mac", screenshots: { mac: ["/missing.png"] } },
+        []
+      ),
+      { keywords: "mac" }
+    );
+    assert.equal(
+      withStagedMacScreenshots({ screenshots: { mac: ["/missing.png"] } }, []),
+      undefined
+    );
   });
 });

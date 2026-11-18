@@ -21,6 +21,11 @@ export interface ProductScreenshots {
   watch?: string[];
   /** Google Play-only Wear OS screenshots. */
   wearOs?: string[];
+  /**
+   * App Store-only Mac screenshots (2880x1800). They go to the app's macOS
+   * version as `APP_DESKTOP`, never to the iOS version or Google Play.
+   */
+  mac?: string[];
 }
 
 /**

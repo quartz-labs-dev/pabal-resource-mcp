@@ -14,6 +14,7 @@ import type {
   GooglePlayMultilingualAsoData,
   AppStoreAsoData,
   AppStoreMultilingualAsoData,
+  AppStoreMacAsoData,
 } from "../types/aso/index.js";
 import {
   isGooglePlayLocale,
@@ -138,6 +139,34 @@ function listScreenshotDirPaths(
     (fileName) =>
       `/products/${slug}/screenshots/${locale}/${dirPath}/${fileName}`
   );
+}
+
+/**
+ * The Mac App Store block for one locale, or undefined when the locale has
+ * neither Mac copy nor rendered Mac screenshots. Only what was written for the
+ * Mac is carried: the iPhone copy is never copied into it, and a locale whose
+ * `mac/` folder is missing gets no screenshot key rather than another
+ * locale's set.
+ */
+function buildMacAsoData(
+  localeData: ProductLocale | undefined,
+  macScreenshots: string[] | undefined
+): AppStoreMacAsoData | undefined {
+  const listing = localeData?.platforms?.macos;
+  const keywords = Array.isArray(listing?.keywords)
+    ? listing.keywords.join(",")
+    : listing?.keywords;
+
+  const macData: AppStoreMacAsoData = {
+    ...(listing?.description ? { description: listing.description } : {}),
+    ...(keywords ? { keywords } : {}),
+    ...(listing?.promotionalText
+      ? { promotionalText: listing.promotionalText }
+      : {}),
+    ...(macScreenshots ? { screenshots: { mac: macScreenshots } } : {}),
+  };
+
+  return Object.keys(macData).length > 0 ? macData : undefined;
 }
 
 /**
@@ -406,6 +435,11 @@ export function loadAsoFromConfig(
             : undefined,
         };
 
+        const macOS = buildMacAsoData(
+          rawLocaleData,
+          listScreenshotDirPaths(productsDir, slug, locale, ["mac"])
+        );
+
         appStoreLocales[locale] = {
           name: aso.title || "",
           subtitle: aso.subtitle,
@@ -424,6 +458,7 @@ export function loadAsoFromConfig(
             // Apple Watch screenshots are App Store-only.
             appleWatch: localeScreenshots.watch,
           },
+          ...(macOS ? { macOS } : {}),
         };
       }
 

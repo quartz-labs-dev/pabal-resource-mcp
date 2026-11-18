@@ -66,6 +66,14 @@ export function sanitizeText(
   return cleaned;
 }
 
+/** Text fields the macOS App Store version carries on its own. */
+const MAC_TEXT_FIELDS = [
+  "description",
+  "keywords",
+  "promotionalText",
+  "whatsNew",
+] as const;
+
 /**
  * Sanitize all ASO data fields
  */
@@ -110,6 +118,15 @@ export function sanitizeAsoData(configData: AsoData): SanitizeResult {
         `App Store [${locale}].whatsNew`,
         warnings
       );
+      if (data.macOS) {
+        for (const field of MAC_TEXT_FIELDS) {
+          data.macOS[field] = sanitizeText(
+            data.macOS[field],
+            `App Store macOS [${locale}].${field}`,
+            warnings
+          );
+        }
+      }
     }
   }
 
@@ -181,6 +198,22 @@ export function validateFieldLimits(configData: AsoData): ValidationIssue[] {
       checkField("promotionalText", data.promotionalText);
       checkField("description", data.description);
       checkField("whatsNew", data.whatsNew);
+
+      if (data.macOS) {
+        for (const field of MAC_TEXT_FIELDS) {
+          const value = data.macOS[field];
+          if (typeof value === "string" && value.length > APP_STORE_LIMITS[field]) {
+            issues.push({
+              locale: `${locale} (macOS)`,
+              store: "appStore",
+              field,
+              currentLength: value.length,
+              limit: APP_STORE_LIMITS[field],
+              severity: "error",
+            });
+          }
+        }
+      }
     }
   }
 
